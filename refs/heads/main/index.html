@@ -38,6 +38,32 @@
             width: 100vw; height: 100vh; min-height: 0; overflow: hidden;
             background: transparent !important;
         }
+        body.no-neon .frame,
+        body.no-neon .card-custom {
+            box-shadow: none !important;
+        }
+        body.no-neon .frame::before,
+        body.no-neon .card-custom::after {
+            display: none !important;
+        }
+        body.no-neon .glow-custom,
+        body.no-neon .label-custom,
+        body.no-neon #status,
+        body.no-neon #title,
+        body.no-neon #game-name {
+            text-shadow: none !important;
+        }
+        body.no-neon #ring,
+        body.no-neon #fill,
+        body.no-neon #game > div {
+            filter: none !important;
+            box-shadow: none !important;
+        }
+        body.no-neon #eq b,
+        body.no-neon #strip i {
+            animation: none !important;
+            box-shadow: none !important;
+        }
 
         .frame {
             position: absolute; border-radius: 20px; overflow: hidden; z-index: 1;
@@ -101,6 +127,7 @@
             statusText: urlParams.get('status') || "",
             showFacecam: urlParams.get('cam') !== '0' && urlParams.get('cam') !== 'off',
             showClock: urlParams.get('clock') !== '0' && urlParams.get('clock') !== 'off',
+            neonEnabled: urlParams.get('neon') !== '0' && urlParams.get('neon') !== 'off',
             timerMode: urlParams.get('timer') || 'uptime',
             cdMins: clampInteger(urlParams.get('cdmins'), 15, 1, 180),
             isViewMode
@@ -122,13 +149,19 @@
         state.cdMins = clampInteger(state.cdMins, 15, 1, 180);
         state.showFacecam = typeof state.showFacecam === 'boolean' ? state.showFacecam : true;
         state.showClock = typeof state.showClock === 'boolean' ? state.showClock : true;
+        state.neonEnabled = typeof state.neonEnabled === 'boolean' ? state.neonEnabled : true;
         state.timerMode = ['uptime', 'countdown', 'none'].includes(state.timerMode) ? state.timerMode : 'uptime';
         state.isViewMode = isViewMode;
+
+        function syncNeonMode() {
+            document.body.classList.toggle('no-neon', !state.neonEnabled);
+        }
 
         if (state.isViewMode) {
             document.body.classList.remove('bg-slate-950');
             document.body.classList.add('overlay-mode');
         }
+        syncNeonMode();
 
         function saveState() {
             try {
@@ -140,20 +173,34 @@
 
         document.documentElement.style.setProperty('--h', state.hue);
 
+        const streamStartKey = 'streamStart';
+        const cdStartKey = 'cdStart';
+        const cdDurationKey = 'cdDurationSecs';
         let streamStart = Date.now();
         let cdStart = Date.now();
         try {
-            if (!localStorage.getItem('streamStart')) localStorage.setItem('streamStart', Date.now());
-            streamStart = Number(localStorage.getItem('streamStart')) || Date.now();
-            if (!localStorage.getItem('cdStart')) localStorage.setItem('cdStart', Date.now());
-            cdStart = Number(localStorage.getItem('cdStart')) || Date.now();
+            const now = Date.now();
+            const storedStreamStart = Number(localStorage.getItem(streamStartKey));
+            streamStart = Number.isFinite(storedStreamStart) && storedStreamStart > 0 ? storedStreamStart : now;
+            localStorage.setItem(streamStartKey, streamStart);
+
+            const countdownDuration = state.cdMins * 60;
+            const storedCdStart = Number(localStorage.getItem(cdStartKey));
+            const storedCdDuration = Number(localStorage.getItem(cdDurationKey));
+            if (Number.isFinite(storedCdStart) && storedCdStart > 0 && storedCdDuration === countdownDuration) {
+                cdStart = storedCdStart;
+            } else {
+                cdStart = now;
+                localStorage.setItem(cdStartKey, cdStart);
+                localStorage.setItem(cdDurationKey, countdownDuration);
+            }
         } catch(e) {}
 
         window.addEventListener('storage', (event) => {
             const timestamp = Number(event.newValue);
             if (!Number.isFinite(timestamp) || timestamp <= 0) return;
-            if (event.key === 'streamStart') streamStart = timestamp;
-            if (event.key === 'cdStart') cdStart = timestamp;
+            if (event.key === streamStartKey) streamStart = timestamp;
+            if (event.key === cdStartKey) cdStart = timestamp;
         });
 
         let tickerInterval = null;
@@ -168,6 +215,7 @@
             if (state.statusText) params.set('status', state.statusText);
             params.set('cam', state.showFacecam ? '1' : '0');
             params.set('clock', state.showClock ? '1' : '0');
+            params.set('neon', state.neonEnabled ? '1' : '0');
             params.set('timer', state.timerMode);
             params.set('cdmins', state.cdMins);
 
@@ -283,6 +331,13 @@
                                 <div class="space-y-3">
                                     <label class="flex items-center justify-between p-3 bg-slate-950 border border-slate-800/80 rounded-xl cursor-pointer hover:border-slate-700 transition-all">
                                         <span class="text-sm font-medium text-slate-200 flex items-center space-x-2">
+                                            <i class="fa-solid fa-wand-magic-sparkles text-purple-400 w-5"></i>
+                                            <span>Neon Effects</span>
+                                        </span>
+                                        <input type="checkbox" ${state.neonEnabled ? 'checked' : ''} onchange="toggleModule('neonEnabled', this.checked)" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-900 border-slate-700">
+                                    </label>
+                                    <label class="flex items-center justify-between p-3 bg-slate-950 border border-slate-800/80 rounded-xl cursor-pointer hover:border-slate-700 transition-all">
+                                        <span class="text-sm font-medium text-slate-200 flex items-center space-x-2">
                                             <i class="fa-solid fa-video text-pink-400 w-5"></i>
                                             <span>Facecam Frame</span>
                                         </span>
@@ -321,9 +376,11 @@
                                         <label class="block text-xs font-medium text-slate-300 mb-1">Countdown Duration (Minutes)</label>
                                         <div class="flex items-center space-x-2">
                                             <input type="number" min="1" max="180" value="${state.cdMins}" onchange="updateCdMins(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none">
-                                            <button onclick="resetTimers()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl font-medium">Reset</button>
+                                            <button onclick="resetTimer('countdown')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl font-medium whitespace-nowrap">Reset Countdown</button>
                                         </div>
                                     </div>
+                                    ` : state.timerMode === 'uptime' ? `
+                                    <button onclick="resetTimer('uptime')" class="w-full px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl font-medium">Reset Time Live</button>
                                     ` : ''}
                                 </div>
                             </div>
@@ -467,6 +524,8 @@
 
         function updateState(key, val) {
             state[key] = val;
+            if (key === 'timerMode' && val === 'uptime') resetTimer('uptime');
+            if (key === 'timerMode' && val === 'countdown') resetTimer('countdown');
             saveState();
             render();
         }
@@ -488,24 +547,35 @@
 
         function toggleModule(key, val) {
             state[key] = val;
+            if (key === 'neonEnabled') syncNeonMode();
             saveState();
             render();
         }
 
         function updateCdMins(mins) {
             state.cdMins = clampInteger(mins, 15, 1, 180);
+            resetTimer('countdown');
             saveState();
             render();
         }
 
-        function resetTimers() {
+        function resetTimer(mode) {
             const now = Date.now();
-            streamStart = now;
-            cdStart = now;
             try {
-                localStorage.setItem('streamStart', now);
-                localStorage.setItem('cdStart', now);
+                if (mode === 'uptime' || mode === 'all') {
+                    streamStart = now;
+                    localStorage.setItem(streamStartKey, now);
+                }
+                if (mode === 'countdown' || mode === 'all') {
+                    cdStart = now;
+                    localStorage.setItem(cdStartKey, now);
+                    localStorage.setItem(cdDurationKey, state.cdMins * 60);
+                }
             } catch(e) {}
+        }
+
+        function resetTimers() {
+            resetTimer('all');
         }
 
         function copyObsUrl() {
