@@ -256,11 +256,7 @@ if (camDisabled) {
     // Cam + Clock (Timer disabled) -> Clock moves up to fill space
     clockEl.style.top = '360px';
     clockEl.style.height = '528px';
-  } else if (clockDisabled && timerMode !== 'none') {
-    // Cam + Timer (Clock disabled) -> Timer moves up into clock's spot
-    timerEl.style.top = '360px';
-    timerEl.style.height = '528px';
-  }
+  } 
 }
 
 // Equalizer bars
