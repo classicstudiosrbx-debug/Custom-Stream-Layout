@@ -112,6 +112,50 @@
             text-shadow: 0 0 8px var(--c2);
         }
         body.no-neon #promo { text-shadow: none !important; }
+        .studio-footer {
+            position: relative; isolation: isolate; overflow: hidden;
+            padding: 10px 24px; border-top: 1px solid rgba(148, 163, 184, .16);
+            background:
+                radial-gradient(70% 180% at 8% 50%, color-mix(in srgb, var(--c1) 16%, transparent), transparent 60%),
+                radial-gradient(60% 180% at 92% 50%, color-mix(in srgb, var(--c3) 12%, transparent), transparent 62%),
+                #080714;
+        }
+        .legacy-footer { display: none !important; }
+        .studio-footer::before {
+            content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--c1), var(--c2), var(--c3), transparent);
+            box-shadow: 0 0 18px color-mix(in srgb, var(--c2) 70%, transparent);
+        }
+        .studio-footer-inner {
+            position: relative; display: flex; align-items: center; justify-content: space-between;
+            gap: 18px; max-width: 1500px; margin: 0 auto;
+        }
+        .studio-footer-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .studio-footer-orb {
+            display: grid; place-items: center; width: 30px; height: 30px; flex: none;
+            border: 1px solid color-mix(in srgb, var(--c2) 80%, white 20%); border-radius: 10px;
+            color: #fff; background: linear-gradient(135deg, var(--c1), var(--c3));
+            box-shadow: 0 0 16px color-mix(in srgb, var(--c1) 55%, transparent);
+        }
+        .studio-footer-kicker { color: var(--c2); font: 700 10px/1 'Rajdhani', sans-serif; letter-spacing: .22em; text-transform: uppercase; }
+        .studio-footer-name { margin-top: 3px; color: #fff; font: 700 17px/1 'Orbitron', monospace; letter-spacing: .04em; white-space: nowrap; }
+        .studio-footer-links { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+        .studio-footer-link {
+            display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 7px 11px;
+            border: 1px solid rgba(148,163,184,.18); border-radius: 10px; color: #cbd5e1;
+            background: rgba(15,23,42,.62); font: 600 12px/1 'Rajdhani', sans-serif; letter-spacing: .04em;
+            transition: border-color .2s ease, color .2s ease, transform .2s ease, box-shadow .2s ease;
+        }
+        .studio-footer-link:hover { color: #fff; border-color: var(--c2); transform: translateY(-1px); box-shadow: 0 0 16px color-mix(in srgb, var(--c2) 28%, transparent); }
+        .studio-footer-link.primary { color: #fff; border-color: color-mix(in srgb, var(--c1) 60%, transparent); background: color-mix(in srgb, var(--c1) 13%, #0f172a); }
+        .studio-footer-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        body.no-neon .studio-footer::before,
+        body.no-neon .studio-footer-orb { box-shadow: none !important; }
+        body.no-neon .studio-footer-link:hover { box-shadow: none !important; }
+        @media (max-width: 860px) {
+            .studio-footer-inner { align-items: flex-start; flex-direction: column; }
+            .studio-footer-links { justify-content: flex-start; }
+        }
         .corner-polish {
             position: absolute; z-index: 2; width: 46px; height: 46px;
             border: 2px solid rgba(255,255,255,.94);
@@ -436,10 +480,29 @@
                             </div>
                         </div>
                     </main>
-                    <footer class="bg-slate-950 border-t border-slate-800 px-6 py-2.5 text-center text-xs text-slate-500">
+                    <footer class="studio-footer legacy-footer" aria-hidden="true">
                         <span>Stream Layout Studio</span>
                         <span class="mx-2 text-slate-700">•</span>
                         <a href="https://custom-stream-layout.classicstudios-rbx.workers.dev/" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:text-purple-300 transition-colors">https://custom-stream-layout.classicstudios-rbx.workers.dev/</a>
+                    </footer>
+                    <footer class="studio-footer">
+                        <div class="studio-footer-inner">
+                            <div class="studio-footer-brand">
+                                <span class="studio-footer-orb"><i class="fa-solid fa-bolt"></i></span>
+                                <div>
+                                    <div class="studio-footer-kicker">Creator / Stream System</div>
+                                    <div class="studio-footer-name">Classic_playerRBX</div>
+                                </div>
+                            </div>
+                            <div class="studio-footer-links">
+                                <a href="mailto:Classic_player@icloud.com" class="studio-footer-link">
+                                    <i class="fa-solid fa-envelope"></i><span>Classic_player@icloud.com</span>
+                                </a>
+                                <a href="https://custom-stream-layout.classicstudios-rbx.workers.dev/" target="_blank" rel="noopener noreferrer" class="studio-footer-link primary">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i><span>https://custom-stream-layout.classicstudios-rbx.workers.dev/</span>
+                                </a>
+                            </div>
+                        </div>
                     </footer>
                 `;
                 
