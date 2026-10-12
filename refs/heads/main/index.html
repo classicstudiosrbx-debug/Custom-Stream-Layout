@@ -352,25 +352,29 @@
                 `;
             }
 
-            let clockTop = 360, clockHeight = 252;
-            let timerTop = 636, timerHeight = 252;
+        let clockTop = 360, clockHeight = 252;
+        let timerTop = 636, timerHeight = 252;
 
-            if (camDisabled) {
-                if (!clockDisabled && timerMode !== 'none') {
-                    clockTop = 30; clockHeight = 420;
-                    timerTop = 468; timerHeight = 420;
-                } else if (!clockDisabled && timerMode === 'none') {
-                    clockTop = 30; clockHeight = 858;
-                } else if (clockDisabled && timerMode !== 'none') {
-                    timerTop = 636; timerHeight = 252;
-                }
-            } else {
-                if (!clockDisabled && timerMode === 'none') {
-                    clockTop = 360; clockHeight = 528;
-                } else if (clockDisabled && timerMode !== 'none') {
-                    timerTop = 360; timerHeight = 528;
-                }
+        if (camDisabled) {
+            if (!clockDisabled && timerMode !== 'none') {
+                // Both clock and timer are on: split the full column
+                clockTop = 30; clockHeight = 420;
+                timerTop = 468; timerHeight = 420;
+            } else if (!clockDisabled && timerMode === 'none') {
+                // ONLY clock is on: keep it down in the lower section, leaving the top facecam area empty
+                clockTop = 360; clockHeight = 528;
+            } else if (clockDisabled && timerMode !== 'none') {
+                // ONLY timer is on: keep it down in the lower section, leaving the top facecam area empty
+                timerTop = 360; timerHeight = 528;
             }
+        } else {
+            // Facecam is ON
+            if (!clockDisabled && timerMode === 'none') {
+                clockTop = 360; clockHeight = 528;
+            } else if (clockDisabled && timerMode !== 'none') {
+                timerTop = 360; timerHeight = 528;
+            }
+        }
 
             const gameWidth = camDisabled ? '1872px' : '1536px';
 
