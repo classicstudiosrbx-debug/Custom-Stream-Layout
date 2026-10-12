@@ -225,6 +225,9 @@ if (clockDisabled) {
 if (camDisabled) {
   camEl.style.display = 'none';
   
+  // FIX: Expand game width to match the wide background cutout
+  document.getElementById('game').style.width = '1872px';
+  
   // Game window fills full width above the bottom strip
   bgPath.setAttribute('d', `
     M0 0 H1920 V1080 H0 Z
