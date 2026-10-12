@@ -92,7 +92,7 @@
             showClock: urlParams.get('clock') !== '0' && urlParams.get('clock') !== 'off',
             timerMode: urlParams.get('timer') || 'uptime',
             cdMins: parseInt(urlParams.get('cdmins')) || 15,
-            isViewMode: window.location.pathname.includes('view') || urlParams.get('view') === '1' || urlParams.get('obs') === '1'
+            isViewMode: urlParams.get('view') === '1' || urlParams.get('obs') === '1'
         };
 
         if (!state.isViewMode) {
@@ -123,12 +123,11 @@
 
         let tickerInterval = null;
 
-        // Build valid URL query parameters using ? and &
-       function getObsUrl() {
-            let baseUrl = window.location.href.split('?')[0].replace('index.html', '');
-            if (!baseUrl.endsWith('/')) baseUrl += '/';
-            
+        function getObsUrl() {
+            const baseUrl = window.location.href.split('?')[0];
             const params = new URLSearchParams();
+            
+            params.set('view', '1');
             params.set('hue', state.hue);
             params.set('title', state.gameTitle);
             params.set('game', state.gameSubtitle);
@@ -138,7 +137,7 @@
             params.set('timer', state.timerMode);
             params.set('cdmins', state.cdMins);
 
-            return baseUrl + 'view?' + params.toString();
+            return baseUrl + '?' + params.toString();
         }
 
         function render() {
@@ -148,6 +147,10 @@
                 app.innerHTML = renderLayoutHTML(true);
                 initLiveTickers();
             } else {
+                const gameW = state.showFacecam ? 1536 : 1872;
+                const camW = 312;
+                const camH = 312;
+
                 app.innerHTML = `
                     <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
                         <div class="flex items-center space-x-3">
@@ -180,7 +183,31 @@
                                     </button>
                                 </h2>
                                 <input type="text" id="obs-url-input" readonly value="${getObsUrl()}" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-300 select-all focus:outline-none">
-                                <p class="text-[11px] text-slate-400 mt-2">Copy and paste this URL directly into your OBS Browser Source settings.</p>
+                                <p class="text-[11px] text-slate-400 mt-2">Copy and paste this URL directly into your OBS Browser Source settings (1920x1080).</p>
+                            </div>
+
+                            <!-- OBS Source Transforms (Pixels) -->
+                            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+                                <h2 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center space-x-2">
+                                    <i class="fa-solid fa-ruler-combined"></i><span>OBS Source Transforms (Pixels)</span>
+                                </h2>
+                                <p class="text-[11px] text-slate-400">Use these exact pixel dimensions inside OBS when placing your game capture and facecam sources behind the overlay:</p>
+                                <div class="space-y-2 text-xs font-mono">
+                                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex justify-between items-center">
+                                        <span class="text-slate-300"><i class="fa-solid fa-gamepad text-purple-400 mr-1.5"></i> Game / Display Capture</span>
+                                        <span class="text-purple-300">X: 22px | Y: 22px<br>W: ${gameW}px | H: 864px</span>
+                                    </div>
+                                    ${state.showFacecam ? `
+                                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex justify-between items-center">
+                                        <span class="text-slate-300"><i class="fa-solid fa-video text-pink-400 mr-1.5"></i> Facecam Source</span>
+                                        <span class="text-pink-300">X: 1584px | Y: 30px<br>W: ${camW}px \vert{} H:${camH}px</span>
+                                    </div>
+                                    ` : `
+                                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 text-slate-500 italic text-center">
+                                        Facecam frame is currently disabled.
+                                    </div>
+                                    `}
+                                </div>
                             </div>
 
                             <!-- Stream Info -->
@@ -278,22 +305,6 @@
                                 </div>
                             </div>
 
-                            <hr class="border-slate-800">
-
-                            <!-- Setup Guide -->
-                            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
-                                <h2 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center space-x-2">
-                                    <i class="fa-solid fa-circle-question"></i><span>How to Use in OBS</span>
-                                </h2>
-                                <ol class="text-xs text-slate-300 space-y-2 list-decimal pl-4">
-                                    <li>Click <b>Copy URL</b> at the top of this sidebar.</li>
-                                    <li>In OBS, add a new <b>Browser</b> source to your scene.</li>
-                                    <li>Paste the copied URL into the URL field.</li>
-                                    <li>Set <b>Width</b> to <code class="text-purple-400">1920</code> and <b>Height</b> to <code class="text-purple-400">1080</code>.</li>
-                                    <li>Click OK and your layout will be active.</li>
-                                </ol>
-                            </div>
-
                         </aside>
 
                         <!-- Preview Area -->
@@ -352,29 +363,25 @@
                 `;
             }
 
-        let clockTop = 360, clockHeight = 252;
-        let timerTop = 636, timerHeight = 252;
+            let clockTop = 360, clockHeight = 252;
+            let timerTop = 636, timerHeight = 252;
 
-        if (camDisabled) {
-            if (!clockDisabled && timerMode !== 'none') {
-                // Both clock and timer are on: split the full column
-                clockTop = 30; clockHeight = 420;
-                timerTop = 468; timerHeight = 420;
-            } else if (!clockDisabled && timerMode === 'none') {
-                // ONLY clock is on: keep it down in the lower section, leaving the top facecam area empty
-                clockTop = 360; clockHeight = 528;
-            } else if (clockDisabled && timerMode !== 'none') {
-                // ONLY timer is on: keep it down in the lower section, leaving the top facecam area empty
-                timerTop = 360; timerHeight = 528;
+            if (camDisabled) {
+                if (!clockDisabled && timerMode !== 'none') {
+                    clockTop = 30; clockHeight = 420;
+                    timerTop = 468; timerHeight = 420;
+                } else if (!clockDisabled && timerMode === 'none') {
+                    clockTop = 360; clockHeight = 528;
+                } else if (clockDisabled && timerMode !== 'none') {
+                    timerTop = 360; timerHeight = 528;
+                }
+            } else {
+                if (!clockDisabled && timerMode === 'none') {
+                    clockTop = 360; clockHeight = 528;
+                } else if (clockDisabled && timerMode !== 'none') {
+                    timerTop = 360; timerHeight = 528;
+                }
             }
-        } else {
-            // Facecam is ON
-            if (!clockDisabled && timerMode === 'none') {
-                clockTop = 360; clockHeight = 528;
-            } else if (clockDisabled && timerMode !== 'none') {
-                timerTop = 360; timerHeight = 528;
-            }
-        }
 
             const gameWidth = camDisabled ? '1872px' : '1536px';
 
