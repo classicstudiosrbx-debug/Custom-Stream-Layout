@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Stream Layout</title>
-    <!-- Tailwind CSS -->
+    <title>Custom Stream Layout Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
@@ -26,8 +23,7 @@
                             cyan: '#00f0ff',
                             pink: '#ff0055',
                             purple: '#8a2be2',
-                            green: '#00ff66',
-                            amber: '#ffaa00'
+                            green: '#00ff66'
                         }
                     },
                     fontFamily: {
@@ -41,60 +37,25 @@
     </script>
 
     <style>
+        :root {
+            --h: 280;
+            --c1: hsl(var(--h) 100% 62%);
+            --c2: hsl(calc(var(--h) + 70) 100% 60%);
+            --c3: hsl(calc(var(--h) + 140) 100% 62%);
+            --card: rgba(10, 8, 22, .86);
+        }
+
         body {
             background-color: #07090e;
             color: #e2e8f0;
             font-family: 'Rajdhani', sans-serif;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(243, 128, 32, 0.08) 0%, transparent 45%),
-                radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.06) 0%, transparent 45%),
-                radial-gradient(circle at 50% 50%, rgba(138, 43, 226, 0.04) 0%, transparent 60%);
-            background-attachment: fixed;
         }
 
         .cf-glass {
             background: rgba(13, 17, 26, 0.85);
             backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(243, 128, 32, 0.2);
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
-        }
-
-        .scanline-overlay {
-            position: relative;
-            overflow: hidden;
-        }
-        .scanline-overlay::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            z-index: 10;
-            background-size: 100% 3px, 6px 100%;
-            pointer-events: none;
-        }
-
-        .grid-bg {
-            background-size: 32px 32px;
-            background-image: 
-                linear-gradient(to right, rgba(243, 128, 32, 0.03) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(243, 128, 32, 0.03) 1px, transparent 1px);
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #07090e;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1e2638;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #F38020;
         }
 
         input[type=range] {
@@ -106,9 +67,9 @@
             height: 18px;
             width: 18px;
             border-radius: 4px;
-            background: #F38020;
+            background: var(--c1);
             cursor: pointer;
-            box-shadow: 0 0 12px #F38020;
+            box-shadow: 0 0 12px var(--c1);
             margin-top: -6px;
         }
         input[type=range]::-webkit-slider-runnable-track {
@@ -119,278 +80,156 @@
             border-radius: 3px;
         }
 
-        .tab-btn.active {
-            border-color: #F38020;
-            color: #F38020;
-            background-color: rgba(243, 128, 32, 0.12);
-            box-shadow: 0 0 15px rgba(243, 128, 32, 0.2);
+        /* Scaled Preview Elements matching Stream-layout.html */
+        .preview-canvas {
+            aspect-ratio: 16 / 9;
+            background: #020205;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .prev-frame {
+            position: absolute;
+            border-radius: 12px;
+            border: 2px solid var(--c1);
+            box-shadow: 0 0 15px color-mix(in srgb, var(--c1) 40%, transparent);
+        }
+        .prev-card {
+            position: absolute;
+            border-radius: 10px;
+            background: var(--card);
+            border: 1px solid color-mix(in srgb, var(--c2) 40%, transparent);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col grid-bg relative overflow-x-hidden">
+<body class="min-h-screen flex flex-col">
 
-    <!-- App Navigation Header -->
-    <header class="border-b border-cf-border bg-cf-panel/90 backdrop-blur-md px-6 py-3.5 sticky top-0 z-50 flex flex-wrap justify-between items-center gap-4">
-        <div class="flex items-center gap-4">
-            <div class="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-cf-orange/10 border border-cf-orange text-cf-orange shadow-[0_0_20px_rgba(243,128,32,0.3)]">
-                <i class="fa-solid fa-cloud text-xl animate-pulse"></i>
+    <!-- Header -->
+    <header class="border-b border-cf-border bg-cf-panel/90 backdrop-blur-md px-6 py-3.5 sticky top-0 z-50 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-cf-orange/10 border border-cf-orange text-cf-orange">
+                <i class="fa-solid fa-layer-group text-lg"></i>
             </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="font-orbitron font-black text-lg tracking-wider text-white">CUSTOM STREAM LAYOUT GENERATOR <span class="text-cf-orange font-mono text-xs px-2.5 py-0.5 rounded bg-cf-orange/20 border border-cf-orange/40 ml-1">OBS ENGINE</span></h1>
-                </div>
-                <p class="text-xs text-slate-400 font-mono flex items-center gap-2">
-                    <span class="inline-block w-2 h-2 rounded-full bg-cf-green animate-ping"></span>
-                    High-Performance HTML Header Proxy & Generator
-                </p>
-            </div>
-        </div>
-
-        <!-- Navigation Tabs -->
-        <div class="flex items-center gap-2 bg-slate-950/80 p-1 rounded-2xl border border-cf-border">
-            <button onclick="switchTab('builder')" id="tabBtn-builder" class="tab-btn active px-4 py-2 rounded-xl text-xs font-bold font-orbitron text-slate-400 hover:text-white transition flex items-center gap-2">
-                <i class="fa-solid fa-sliders text-cf-orange"></i> URL BUILDER
-            </button>
-            <button onclick="switchTab('guide')" id="tabBtn-guide" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold font-orbitron text-slate-400 hover:text-white transition flex items-center gap-2">
-                <i class="fa-solid fa-book-open text-cf-green"></i> OBS GUIDE
-            </button>
+            <h1 class="font-orbitron font-bold text-sm tracking-wider text-white">CUSTOM STREAM LAYOUT <span class="text-cf-orange text-xs px-2 py-0.5 rounded bg-cf-orange/20">GENERATOR</span></h1>
         </div>
     </header>
 
-    <!-- Main Dashboard Body -->
-    <main class="flex-1 p-4 md:p-6 max-w-[1920px] mx-auto w-full">
+    <!-- Main Workspace -->
+    <main class="flex-1 p-4 md:p-6 max-w-[1920px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Controls Column -->
+        <div class="lg:col-span-4 xl:col-span-3 space-y-5">
+            <div class="cf-glass rounded-2xl p-5 space-y-4">
+                <h2 class="font-orbitron text-xs font-bold tracking-wider text-cf-orange flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-sliders"></i> OVERLAY PARAMETERS
+                </h2>
 
-        <!-- ================= TAB 1: BUILDER & PREVIEW ================= -->
-        <div id="tab-builder" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <!-- LEFT COLUMN: Configurator Dock -->
-            <div class="lg:col-span-4 xl:col-span-3 space-y-6">
-                
-                <!-- Cloudflare Worker Endpoint Base Config -->
-                <div class="cf-glass rounded-2xl p-5 border border-cf-border space-y-3">
-                    <div class="flex justify-between items-center border-b border-cf-border pb-2.5">
-                        <span class="font-orbitron text-xs font-bold tracking-wider text-cf-orange flex items-center gap-2">
-                            <i class="fa-solid fa-server"></i> WORKER ENDPOINT BASE
-                        </span>
-                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cf-green/10 text-cf-green border border-cf-green/30">HTTPS READY</span>
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label class="block text-xs font-bold uppercase text-slate-300">
-                            Your Cloudflare Worker URL
-                        </label>
-                        <div class="relative">
-                            <input type="text" id="inputEndpoint" value="https://custom-stream-layout.classicstudios-rbx.workers.dev" oninput="updateWorkerUrl()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-xs text-cf-cyan font-mono focus:outline-none transition pl-10">
-                            <i class="fa-solid fa-globe absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
-                        </div>
-                    </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-300">Stream Title</label>
+                    <input type="text" id="inputTitle" value="VALORANT // RADIANT RANKED SPREE" oninput="updateLayout()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2 text-xs text-white font-rajdhani focus:outline-none">
                 </div>
 
-                <!-- Preset Profiles -->
-                <div class="cf-glass rounded-2xl p-4 border border-cf-border">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="font-orbitron text-xs font-bold tracking-wider text-cf-orange flex items-center gap-2">
-                            <i class="fa-solid fa-bookmark"></i> PRESET TEMPLATES
-                        </span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="applyPreset('cyber')" class="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cf-orange/50 text-xs font-bold text-slate-300 transition flex flex-col items-center gap-1">
-                            <i class="fa-solid fa-fire text-cf-orange"></i>
-                            <span>Cyber</span>
-                        </button>
-                        <button onclick="applyPreset('matrix')" class="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cf-green/50 text-xs font-bold text-slate-300 transition flex flex-col items-center gap-1">
-                            <i class="fa-solid fa-terminal text-cf-green"></i>
-                            <span>Matrix</span>
-                        </button>
-                        <button onclick="applyPreset('vaporwave')" class="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cf-pink/50 text-xs font-bold text-slate-300 transition flex flex-col items-center gap-1">
-                            <i class="fa-solid fa-compact-disc text-cf-pink"></i>
-                            <span>Vapor</span>
-                        </button>
-                    </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-300">Game Name</label>
+                    <input type="text" id="inputGame" value="VALORANT" oninput="updateLayout()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2 text-xs text-white font-rajdhani focus:outline-none">
                 </div>
 
-                <!-- Parameters Form -->
-                <div class="cf-glass rounded-2xl p-5 border border-cf-border space-y-4">
-                    <div class="flex justify-between items-center border-b border-cf-border pb-3">
-                        <h2 class="font-orbitron text-xs font-bold tracking-wider text-white flex items-center gap-2">
-                            <i class="fa-solid fa-sliders text-cf-orange"></i> DYNAMIC PARAMETERS
-                        </h2>
-                        <button onclick="resetDefaults()" class="text-[11px] font-mono text-slate-400 hover:text-cf-orange transition flex items-center gap-1">
-                            <i class="fa-solid fa-rotate-left"></i> Reset
-                        </button>
-                    </div>
-
-                    <!-- Stream Title -->
-                    <div class="space-y-1.5">
-                        <label class="block text-xs font-bold uppercase text-slate-300 flex justify-between">
-                            <span>Stream Main Title</span>
-                            <span class="text-[10px] text-cf-orange font-mono">?title=</span>
-                        </label>
-                        <input type="text" id="inputTitle" value="VALORANT // RADIANT RANKED SPREE" oninput="updateWorkerUrl()" class="w-full bg-slate-950/80 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-sm text-white font-rajdhani font-semibold focus:outline-none transition">
-                    </div>
-
-                    <!-- Game / Subtitle -->
-                    <div class="space-y-1.5">
-                        <label class="block text-xs font-bold uppercase text-slate-300 flex justify-between">
-                            <span>Category / Game Name</span>
-                            <span class="text-[10px] text-cf-orange font-mono">?game=</span>
-                        </label>
-                        <input type="text" id="inputGame" value="VALORANT" oninput="updateWorkerUrl()" class="w-full bg-slate-950/80 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-sm text-white font-rajdhani font-semibold focus:outline-none transition">
-                    </div>
-
-                    <!-- Status Badge -->
-                    <div class="space-y-1.5">
-                        <label class="block text-xs font-bold uppercase text-slate-300 flex justify-between">
-                            <span>Status Badge Text</span>
-                            <span class="text-[10px] text-cf-orange font-mono">?status=</span>
-                        </label>
-                        <input type="text" id="inputStatus" value="LIVE STREAM" oninput="updateWorkerUrl()" class="w-full bg-slate-950/80 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-sm text-white font-rajdhani font-semibold focus:outline-none transition">
-                    </div>
-
-                    <!-- Hue Engine -->
-                    <div class="space-y-2 pt-2 border-t border-cf-border">
-                        <div class="flex justify-between items-center">
-                            <label class="text-xs font-bold uppercase text-slate-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-palette text-cf-orange"></i> Hue Color Engine
-                            </label>
-                            <span id="hueDegDisplay" class="font-mono text-xs font-bold text-cf-orange px-2 py-0.5 rounded bg-cf-orange/10 border border-cf-orange/30">190°</span>
-                        </div>
-                        <input type="range" id="inputHue" min="0" max="360" value="190" oninput="updateWorkerUrl()" class="w-full">
-                    </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-300">Status Badge (?status=)</label>
+                    <input type="text" id="inputStatus" value="" placeholder="e.g. BRB or leave blank" oninput="updateLayout()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2 text-xs text-white font-rajdhani focus:outline-none">
                 </div>
 
-                <!-- Final Cloudflare Worker URL Copy Area -->
-                <div class="cf-glass rounded-2xl p-5 border border-cf-border space-y-3">
-                    <span class="font-orbitron text-xs font-bold tracking-wider text-cf-orange flex items-center gap-2">
-                        <i class="fa-solid fa-link"></i> FINAL OBS BROWSER SOURCE URL
-                    </span>
-                    <textarea id="outputWorkerUrl" readonly rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-cf-cyan focus:outline-none resize-none select-all break-all leading-relaxed"></textarea>
-                    <button onclick="copyWorkerUrl()" class="w-full py-2.5 px-3 bg-gradient-to-r from-cf-orange to-cf-darkorange text-white font-bold font-orbitron rounded-xl text-xs transition shadow-[0_0_15px_rgba(243,128,32,0.3)]">
-                        <i class="fa-solid fa-copy mr-1"></i> COPY WORKER URL
-                    </button>
+                <div class="space-y-2 pt-2 border-t border-slate-800">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold text-slate-300">Hue Theme (?hue=)</label>
+                        <span id="hueDegDisplay" class="font-mono text-xs text-cf-orange">280°</span>
+                    </div>
+                    <input type="range" id="inputHue" min="0" max="360" value="280" oninput="updateLayout()" class="w-full">
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: Real-Time Live Preview Canvas -->
-            <div class="lg:col-span-8 xl:col-span-9 space-y-6 flex flex-col">
-                <div class="cf-glass rounded-2xl p-5 border border-cf-border space-y-4 flex-1 flex flex-col min-h-[550px]">
-                    <div class="flex flex-wrap justify-between items-center gap-3 border-b border-cf-border pb-3">
-                        <span class="font-orbitron text-xs font-bold tracking-wider text-white flex items-center gap-2">
-                            <i class="fa-solid fa-display text-cf-orange"></i> OBS 1080P SIMULATED CANVAS
-                        </span>
-                        <select id="bgSimSelect" onchange="changeBgSim()" class="bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-300 px-3 py-1.5 focus:outline-none">
-                            <option value="valorant">Valorant Arena</option>
-                            <option value="cyberpunk">Cyberpunk Night City</option>
-                            <option value="chatting">Just Chatting Setup</option>
-                        </select>
-                    </div>
-
-                    <div id="canvasViewport" class="relative w-full flex-1 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center scanline-overlay min-h-[420px]">
-                        <div id="simBackdrop" class="absolute inset-0 bg-cover bg-center transition-all duration-500 opacity-50" style="background-image: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop');"></div>
-
-                        <div class="absolute inset-0 flex flex-col justify-between p-12 pointer-events-none">
-                            <div class="flex justify-between items-start">
-                                <div class="flex items-center gap-4 bg-slate-950/90 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl">
-                                    <span id="simStatus" class="px-3 py-1 rounded-xl bg-cf-orange text-black font-orbitron font-black text-xs uppercase tracking-wider animate-pulse">LIVE STREAM</span>
-                                    <div>
-                                        <div id="simTitle" class="font-orbitron font-black text-xl text-white tracking-wide">VALORANT // RADIANT RANKED SPREE</div>
-                                        <div id="simGame" class="font-rajdhani font-bold text-sm text-cf-cyan flex items-center gap-1.5">
-                                            <i class="fa-solid fa-gamepad"></i> VALORANT
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="w-full h-2 rounded-full bg-gradient-to-r from-cf-orange via-cf-cyan to-cf-purple shadow-[0_0_20px_rgba(243,128,32,0.8)]"></div>
-                        </div>
-
-                        <div id="hueFilterLayer" class="absolute inset-0 pointer-events-none mix-blend-hue opacity-50 transition-all duration-300"></div>
-                    </div>
-                </div>
+            <!-- Output URL Box -->
+            <div class="cf-glass rounded-2xl p-5 space-y-3">
+                <span class="font-orbitron text-xs font-bold text-cf-orange flex items-center gap-2">
+                    <i class="fa-solid fa-link"></i> OBS BROWSER SOURCE URL
+                </span>
+                <textarea id="outputUrl" readonly rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-cyan-400 focus:outline-none resize-none select-all break-all"></textarea>
+                <button onclick="copyLayoutUrl()" class="w-full py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold font-orbitron rounded-xl text-xs transition shadow-lg">
+                    <i class="fa-solid fa-copy mr-1"></i> COPY OVERLAY URL
+                </button>
             </div>
         </div>
 
-        <!-- ================= TAB 2: OBS INTEGRATION GUIDE ================= -->
-        <div id="tab-guide" class="hidden space-y-6">
-            <div class="cf-glass rounded-2xl p-6 border border-cf-border space-y-6">
-                <h2 class="font-orbitron font-bold text-lg text-white">OBS STUDIO STEP-BY-STEP SETUP GUIDE</h2>
-                <p class="text-xs text-slate-400">Add a Browser Source in OBS, set resolution to 1920x1080, and paste your Worker URL.</p>
+        <!-- Live Preview Canvas Column -->
+        <div class="lg:col-span-8 xl:col-span-9 flex flex-col">
+            <div class="cf-glass rounded-2xl p-5 space-y-4 flex-1 flex flex-col">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <span class="font-orbitron text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-display text-cf-orange"></i> LIVE LAYOUT PREVIEW (1920x1080 scaled)
+                    </span>
+                </div>
+
+                <!-- Scaled Visual Preview Container -->
+                <div class="preview-canvas flex-1" id="previewCanvas">
+                    <!-- Game Frame Placeholder -->
+                    <div class="prev-frame" style="left: 2%; top: 2%; width: 79%; height: 80%;">
+                        <div class="absolute inset-2 border border-dashed border-white/10 flex items-center justify-center text-xs font-mono text-slate-600">GAME FRAME (1536x864)</div>
+                    </div>
+                    
+                    <!-- Webcam Frame Placeholder -->
+                    <div class="prev-frame" style="right: 2%; top: 3%; width: 16%; height: 30%;">
+                        <div class="absolute inset-2 border border-dashed border-white/10 flex items-center justify-center text-[10px] font-mono text-slate-600">CAM</div>
+                    </div>
+
+                    <!-- Clock Card Placeholder -->
+                    <div class="prev-card flex flex-col items-center justify-center p-2" style="right: 2%; top: 35%; width: 16%; height: 26%;">
+                        <div class="text-[9px] font-bold uppercase tracking-widest text-orange-400">SATURDAY</div>
+                        <div class="font-orbitron font-black text-lg text-white">12<span class="text-orange-400">:</span>34</div>
+                        <div class="text-[8px] text-slate-400">12 OCT 2026</div>
+                    </div>
+
+                    <!-- Uptime Card Placeholder -->
+                    <div class="prev-card flex flex-col items-center justify-center p-2" style="right: 2%; top: 63%; width: 16%; height: 26%;">
+                        <div class="text-[9px] font-bold uppercase tracking-widest text-slate-300">Time Live</div>
+                        <div class="font-orbitron font-bold text-xs text-white mt-1">01:42:19</div>
+                    </div>
+
+                    <!-- Bottom Title Strip -->
+                    <div class="prev-card flex items-center px-4 gap-4" style="left: 2%; bottom: 2%; width: 96%; height: 13%;">
+                        <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500 text-xs font-bold text-white">
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>LIVE
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div id="prevTitle" class="font-orbitron font-black text-sm text-white truncate">VALORANT // RADIANT RANKED SPREE</div>
+                            <div id="prevGame" class="font-rajdhani font-bold text-xs text-amber-400 tracking-wider">VALORANT</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
-    <!-- Application JavaScript Logic -->
     <script>
-        function switchTab(tabName) {
-            ['builder', 'guide'].forEach(t => {
-                document.getElementById(`tab-${t}`).classList.add('hidden');
-                document.getElementById(`tabBtn-${t}`).classList.remove('active');
-            });
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-            document.getElementById(`tabBtn-${tabName}`).classList.add('active');
-        }
-
-        function updateWorkerUrl() {
-            const endpoint = document.getElementById('inputEndpoint').value.trim();
+        function updateLayout() {
             const title = document.getElementById('inputTitle').value;
             const game = document.getElementById('inputGame').value;
             const status = document.getElementById('inputStatus').value;
             const hue = document.getElementById('inputHue').value;
 
-            document.getElementById('simTitle').textContent = title;
-            document.getElementById('simGame').innerHTML = `<i class="fa-solid fa-gamepad"></i> ${game}`;
-            document.getElementById('simStatus').textContent = status;
+            document.documentElement.style.setProperty('--h', hue);
             document.getElementById('hueDegDisplay').textContent = `${hue}°`;
-            document.getElementById('hueFilterLayer').style.filter = `hue-rotate(${hue}deg)`;
+            document.getElementById('prevTitle').textContent = title;
+            document.getElementById('prevGame').textContent = game;
 
-            const fullUrl = `${endpoint}/view?title=${encodeURIComponent(title)}&game=${encodeURIComponent(game)}&status=${encodeURIComponent(status)}&hue=${hue}`;
-            document.getElementById('outputWorkerUrl').value = fullUrl;
+            const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+            let fullUrl = `${baseUrl.replace(/\/$/, '')}/view?title=${encodeURIComponent(title)}&game=${encodeURIComponent(game)}&hue=${hue}`;
+            if (status) fullUrl += `&status=${encodeURIComponent(status)}`;
+            
+            document.getElementById('outputUrl').value = fullUrl;
         }
 
-        function applyPreset(type) {
-            if (type === 'cyber') {
-                document.getElementById('inputTitle').value = "CYBERPUNK 2077 // NIGHT CITY RUN";
-                document.getElementById('inputGame').value = "Cyberpunk 2077";
-                document.getElementById('inputStatus').value = "LIVE STREAM";
-                document.getElementById('inputHue').value = "10";
-            } else if (type === 'matrix') {
-                document.getElementById('inputTitle').value = "DEVELOPMENT & CODE STREAM";
-                document.getElementById('inputGame').value = "Software Engineering";
-                document.getElementById('inputStatus').value = "LIVE CODING";
-                document.getElementById('inputHue').value = "120";
-            } else if (type === 'vaporwave') {
-                document.getElementById('inputTitle').value = "LATE NIGHT LO-FI & CHILL";
-                document.getElementById('inputGame').value = "Music & Chill";
-                document.getElementById('inputStatus').value = "VIBING";
-                document.getElementById('inputHue').value = "320";
-            }
-            updateWorkerUrl();
-        }
-
-        function resetDefaults() {
-            document.getElementById('inputTitle').value = "VALORANT // RADIANT RANKED SPREE";
-            document.getElementById('inputGame').value = "VALORANT";
-            document.getElementById('inputStatus').value = "LIVE STREAM";
-            document.getElementById('inputHue').value = "190";
-            updateWorkerUrl();
-        }
-
-        function changeBgSim() {
-            const val = document.getElementById('bgSimSelect').value;
-            const bg = document.getElementById('simBackdrop');
-            if (val === 'valorant') bg.style.backgroundImage = "url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop')";
-            if (val === 'cyberpunk') bg.style.backgroundImage = "url('https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1920&auto=format&fit=crop')";
-            if (val === 'chatting') bg.style.backgroundImage = "url('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1920&auto=format&fit=crop')";
-        }
-
-        function copyWorkerUrl() {
-            const copyText = document.getElementById('outputWorkerUrl');
-            navigator.clipboard.writeText(copyText.value);
-            alert("Worker URL copied to clipboard!");
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            updateWorkerUrl();
-        });
+        window.addEventListener('DOMContentLoaded', updateLayout);
     </script>
 </body>
 </html>
