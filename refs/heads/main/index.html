@@ -123,20 +123,22 @@
 
         let tickerInterval = null;
 
+        // Build valid URL query parameters using ? and &
         function getObsUrl() {
-            const currentUrl = window.location.href.split('?')[0];
-            const params = new URLSearchParams({
-                view: '1',
-                hue: state.hue,
-                title: state.gameTitle,
-                game: state.gameSubtitle,
-                status: state.statusText,
-                cam: state.showFacecam ? '1' : '0',
-                clock: state.showClock ? '1' : '0',
-                timer: state.timerMode,
-                cdmins: state.cdMins
-            });
-            return currentUrl + '?' + params.toString();
+            const baseUrl = window.location.href.split('?')[0];
+            const params = new URLSearchParams();
+            
+            params.set('view', '1');
+            params.set('hue', state.hue);
+            params.set('title', state.gameTitle);
+            params.set('game', state.gameSubtitle);
+            if (state.statusText) params.set('status', state.statusText);
+            params.set('cam', state.showFacecam ? '1' : '0');
+            params.set('clock', state.showClock ? '1' : '0');
+            params.set('timer', state.timerMode);
+            params.set('cdmins', state.cdMins);
+
+            return baseUrl + '?' + params.toString();
         }
 
         function render() {
@@ -170,7 +172,7 @@
                         <aside class="w-full lg:w-[420px] bg-slate-900/80 backdrop-blur-md border-r border-slate-800 p-6 overflow-y-auto space-y-6 shrink-0">
                             
                             <!-- OBS URL Box & Copy -->
-                            <div class="bg-slate-950 border border-purple-500/30 rounded-2xl p-4 shadow-xl shadow-purple-950/2ul">
+                            <div class="bg-slate-950 border border-purple-500/30 rounded-2xl p-4 shadow-xl shadow-purple-950/20">
                                 <h2 class="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2 flex items-center justify-between">
                                     <span class="flex items-center space-x-2"><i class="fa-solid fa-link"></i><span>OBS Browser Source URL</span></span>
                                     <button onclick="copyObsUrl()" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1.5 font-medium">
@@ -178,7 +180,7 @@
                                     </button>
                                 </h2>
                                 <input type="text" id="obs-url-input" readonly value="${getObsUrl()}" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-300 select-all focus:outline-none">
-                                <p class="text-[11px] text-slate-400 mt-2">Paste this exact URL into an OBS Browser Source set to 1920×1080.</p>
+                                <p class="text-[11px] text-slate-400 mt-2">Copy and paste this URL directly into your OBS Browser Source settings.</p>
                             </div>
 
                             <!-- Stream Info -->
@@ -278,18 +280,17 @@
 
                             <hr class="border-slate-800">
 
-                            <!-- Guide & Instructions Card -->
+                            <!-- Setup Guide -->
                             <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
                                 <h2 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center space-x-2">
-                                    <i class="fa-solid fa-circle-question"></i><span>How to Use & OBS Guide</span>
+                                    <i class="fa-solid fa-circle-question"></i><span>How to Use in OBS</span>
                                 </h2>
                                 <ol class="text-xs text-slate-300 space-y-2 list-decimal pl-4">
-                                    <li>Customize your titles, color hue, and widgets in this Studio dashboard.</li>
-                                    <li>Click the <b>Copy URL</b> button at the top of this sidebar.</li>
-                                    <li>Open <b>OBS Studio</b> and go to your Scene.</li>
-                                    <li>Click <b>+</b> under Sources and select <b>Browser</b>.</li>
-                                    <li>Paste your copied URL into the URL field.</li>
-                                    <li>Set both <b>Width</b> to <code class="text-purple-400">1920</code> and <b>Height</b> to <code class="text-purple-400">1080</code>, then click OK.</li>
+                                    <li>Click <b>Copy URL</b> at the top of this sidebar.</li>
+                                    <li>In OBS, add a new <b>Browser</b> source to your scene.</li>
+                                    <li>Paste the copied URL into the URL field.</li>
+                                    <li>Set <b>Width</b> to <code class="text-purple-400">1920</code> and <b>Height</b> to <code class="text-purple-400">1080</code>.</li>
+                                    <li>Click OK and your layout will be active.</li>
                                 </ol>
                             </div>
 
@@ -435,7 +436,6 @@
             render();
         }
 
-        // Live smooth hue updates during dragging
         function updateHueLive(val) {
             state.hue = parseInt(val);
             document.documentElement.style.setProperty('--h', state.hue);
@@ -476,12 +476,20 @@
             const urlInput = document.getElementById('obs-url-input');
             if (urlInput) {
                 urlInput.select();
-                navigator.clipboard.writeText(urlInput.value);
-                const btnText = document.getElementById('copy-btn-text');
-                if (btnText) {
-                    btnText.textContent = 'Copied!';
-                    setTimeout(() => { btnText.textContent = 'Copy URL'; }, 2000);
-                }
+                navigator.clipboard.writeText(urlInput.value).then(() => {
+                    const btnText = document.getElementById('copy-btn-text');
+                    if (btnText) {
+                        btnText.textContent = 'Copied!';
+                        setTimeout(() => { btnText.textContent = 'Copy URL'; }, 2000);
+                    }
+                }).catch(() => {
+                    document.execCommand('copy');
+                    const btnText = document.getElementById('copy-btn-text');
+                    if (btnText) {
+                        btnText.textContent = 'Copied!';
+                        setTimeout(() => { btnText.textContent = 'Copy URL'; }, 2000);
+                    }
+                });
             }
         }
 
