@@ -33,6 +33,11 @@
         }
 
         body { font-family: 'Outfit', sans-serif; }
+        html, body { margin: 0; }
+        body.overlay-mode {
+            width: 100vw; height: 100vh; min-height: 0; overflow: hidden;
+            background: transparent !important;
+        }
 
         .frame {
             position: absolute; border-radius: 20px; overflow: hidden; z-index: 1;
@@ -82,17 +87,22 @@
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
+        const clampInteger = (value, fallback, min, max) => {
+            const parsed = Number.parseInt(value, 10);
+            return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+        };
+        const isViewMode = urlParams.get('view') === '1' || urlParams.get('obs') === '1';
         
         let state = {
             gameTitle: urlParams.get('title') || "ROBLOX // BUILDING A BOAT",
             gameSubtitle: urlParams.get('game') || "ROBLOX",
-            hue: parseInt(urlParams.get('hue')) || 280,
+            hue: clampInteger(urlParams.get('hue'), 280, 0, 360),
             statusText: urlParams.get('status') || "",
             showFacecam: urlParams.get('cam') !== '0' && urlParams.get('cam') !== 'off',
             showClock: urlParams.get('clock') !== '0' && urlParams.get('clock') !== 'off',
             timerMode: urlParams.get('timer') || 'uptime',
-            cdMins: parseInt(urlParams.get('cdmins')) || 15,
-            isViewMode: urlParams.get('view') === '1' || urlParams.get('obs') === '1'
+            cdMins: clampInteger(urlParams.get('cdmins'), 15, 1, 180),
+            isViewMode
         };
 
         if (!state.isViewMode) {
@@ -104,30 +114,54 @@
             } catch (e) {}
         }
 
+        state.gameTitle = typeof state.gameTitle === 'string' ? state.gameTitle : "ROBLOX // BUILDING A BOAT";
+        state.gameSubtitle = typeof state.gameSubtitle === 'string' ? state.gameSubtitle : "ROBLOX";
+        state.statusText = typeof state.statusText === 'string' ? state.statusText : "";
+        state.hue = clampInteger(state.hue, 280, 0, 360);
+        state.cdMins = clampInteger(state.cdMins, 15, 1, 180);
+        state.showFacecam = typeof state.showFacecam === 'boolean' ? state.showFacecam : true;
+        state.showClock = typeof state.showClock === 'boolean' ? state.showClock : true;
+        state.timerMode = ['uptime', 'countdown', 'none'].includes(state.timerMode) ? state.timerMode : 'uptime';
+        state.isViewMode = isViewMode;
+
+        if (state.isViewMode) {
+            document.body.classList.remove('bg-slate-950');
+            document.body.classList.add('overlay-mode');
+        }
+
         function saveState() {
             try {
-                localStorage.setItem('stream_layout_state_v3', JSON.stringify(state));
+                const settings = { ...state };
+                delete settings.isViewMode;
+                localStorage.setItem('stream_layout_state_v3', JSON.stringify(settings));
             } catch(e) {}
         }
 
-        ddocument.documentElement.style.setProperty('--h', state.hue);
+        document.documentElement.style.setProperty('--h', state.hue);
 
         let streamStart = Date.now();
         let cdStart = Date.now();
         try {
             if (!localStorage.getItem('streamStart')) localStorage.setItem('streamStart', Date.now());
-            streamStart = +localStorage.getItem('streamStart');
+            streamStart = Number(localStorage.getItem('streamStart')) || Date.now();
             if (!localStorage.getItem('cdStart')) localStorage.setItem('cdStart', Date.now());
-            cdStart = +localStorage.getItem('cdStart');
+            cdStart = Number(localStorage.getItem('cdStart')) || Date.now();
         } catch(e) {}
+
+        window.addEventListener('storage', (event) => {
+            const timestamp = Number(event.newValue);
+            if (!Number.isFinite(timestamp) || timestamp <= 0) return;
+            if (event.key === 'streamStart') streamStart = timestamp;
+            if (event.key === 'cdStart') cdStart = timestamp;
+        });
 
         let tickerInterval = null;
 
         function getObsUrl() {
-            let baseUrl = window.location.href.split('?')[0].replace('index.html', '');
-            if (!baseUrl.endsWith('/')) baseUrl += '/';
-            
-            const params = new URLSearchParams();
+            const url = new URL(window.location.href);
+            url.search = '';
+            url.hash = '';
+            const params = url.searchParams;
             params.set('hue', state.hue);
             params.set('title', state.gameTitle);
             params.set('game', state.gameSubtitle);
@@ -136,8 +170,9 @@
             params.set('clock', state.showClock ? '1' : '0');
             params.set('timer', state.timerMode);
             params.set('cdmins', state.cdMins);
+            params.set('view', '1');
 
-            return baseUrl + 'view?' + params.toString();
+            return url.toString();
         }
         function render() {
             const app = document.getElementById('app');
@@ -146,8 +181,8 @@
                 app.innerHTML = renderLayoutHTML(true);
                 initLiveTickers();
             } else {
-                const bothCardsActive = !state.showFacecam && state.showClock && state.timerMode !== 'none';
-                const gameW = (state.showFacecam || bothCardsActive) ? 1536 : 1872;
+                const rightColumnActive = state.showFacecam || state.showClock || state.timerMode !== 'none';
+                const gameW = rightColumnActive ? 1536 : 1872;
 
                 app.innerHTML = `
                     <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
@@ -341,16 +376,15 @@
             
             const bothCardsActive = camDisabled && !clockDisabled && timerMode !== 'none';
 
+            const rightColumnActive = !camDisabled || !clockDisabled || timerMode !== 'none';
+            const gameHoleRight = rightColumnActive ? 1538 : 1874;
             let svgPathD = `
                 M0 0 H1920 V1080 H0 Z
-                M46 24 H1538 A22 30 0 0 1 1560 46 V866 A22 22 0 0 1 1538 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
-                M1606 24 H1874 A22 30 0 0 1 1896 46 V314 A22 22 0 0 1 1874 336 H1606 A22 30 0 0 1 1584 314 V46 A22 30 0 0 1 1606 24 Z
+                M46 24 H${gameHoleRight} A22 30 0 0 1 ${gameHoleRight + 22} 46 V866 A22 22 0 0 1 ${gameHoleRight} 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
             `;
-
-            if (camDisabled && !bothCardsActive) {
-                svgPathD = `
-                    M0 0 H1920 V1080 H0 Z
-                    M46 24 H1874 A22 30 0 0 1 1896 46 V866 A22 22 0 0 1 1874 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
+            if (!camDisabled) {
+                svgPathD += `
+                    M1606 24 H1874 A22 30 0 0 1 1896 46 V314 A22 22 0 0 1 1874 336 H1606 A22 30 0 0 1 1584 314 V46 A22 30 0 0 1 1606 24 Z
                 `;
             }
 
@@ -374,7 +408,7 @@
                 }
             }
 
-            const gameWidth = (camDisabled && !bothCardsActive) ? '1872px' : '1536px';
+            const gameWidth = rightColumnActive ? '1536px' : '1872px';
 
             return `
                 <svg id="bg" width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;left:0;top:0;z-index:0;pointer-events:none;">
@@ -382,10 +416,10 @@
                 </svg>
 
                 <div class="frame" id="game" style="left: 22px; top: 22px; width: ${gameWidth}; height: 864px; transition: width 0.3s ease;">
-                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] left-[14px] border-r-0 border-bottom-0 rounded-tl-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
-                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] right-[14px] border-l-0 border-bottom-0 rounded-tr-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
-                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 bottom-[14px] left-[14px] border-r-0 border-top-0 rounded-bl-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
-                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 bottom-[14px] right-[14px] border-l-0 border-top-0 rounded-br-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
+                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] left-[14px] border-r-0 border-b-0 rounded-tl-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
+                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] right-[14px] border-l-0 border-b-0 rounded-tr-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
+                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 bottom-[14px] left-[14px] border-r-0 border-t-0 rounded-bl-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
+                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 bottom-[14px] right-[14px] border-l-0 border-t-0 rounded-br-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
                 </div>
 
                 <div class="frame" id="cam" style="left: 1584px; top: 30px; width: 312px; height: 312px; display: ${camDisabled ? 'none' : 'block'};"></div>
@@ -439,7 +473,7 @@
         }
 
         function updateHueLive(val) {
-            state.hue = parseInt(val);
+            state.hue = clampInteger(val, 280, 0, 360);
             document.documentElement.style.setProperty('--h', state.hue);
             const label = document.getElementById('hue-val-label');
             if (label) label.textContent = state.hue + '°';
@@ -448,7 +482,7 @@
         }
 
         function updateHueFinal(val) {
-            state.hue = parseInt(val);
+            state.hue = clampInteger(val, 280, 0, 360);
             saveState();
             render();
         }
@@ -460,17 +494,18 @@
         }
 
         function updateCdMins(mins) {
-            state.cdMins = parseInt(mins) || 15;
+            state.cdMins = clampInteger(mins, 15, 1, 180);
             saveState();
             render();
         }
 
         function resetTimers() {
+            const now = Date.now();
+            streamStart = now;
+            cdStart = now;
             try {
-                localStorage.setItem('streamStart', Date.now());
-                localStorage.setItem('cdStart', Date.now());
-                streamStart = Date.now();
-                cdStart = Date.now();
+                localStorage.setItem('streamStart', now);
+                localStorage.setItem('cdStart', now);
             } catch(e) {}
         }
 
@@ -478,29 +513,32 @@
             const urlInput = document.getElementById('obs-url-input');
             if (urlInput) {
                 urlInput.select();
-                navigator.clipboard.writeText(urlInput.value).then(() => {
+                const showCopied = () => {
                     const btnText = document.getElementById('copy-btn-text');
                     if (btnText) {
                         btnText.textContent = 'Copied!';
                         setTimeout(() => { btnText.textContent = 'Copy URL'; }, 2000);
                     }
-                }).catch(() => {
-                    document.execCommand('copy');
-                    const btnText = document.getElementById('copy-btn-text');
-                    if (btnText) {
-                        btnText.textContent = 'Copied!';
-                        setTimeout(() => { btnText.textContent = 'Copy URL'; }, 2000);
-                    }
-                });
+                };
+                const fallbackCopy = () => {
+                    urlInput.focus();
+                    urlInput.select();
+                    if (document.execCommand('copy')) showCopied();
+                };
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(urlInput.value).then(showCopied).catch(fallbackCopy);
+                } else {
+                    fallbackCopy();
+                }
             }
         }
 
         function openOBSView() {
-            window.open(getObsUrl(), '_blank', 'width=1280,height=720');
+            window.open(getObsUrl(), '_blank', 'width=1920,height=1080');
         }
 
         function escapeHtml(str) {
-            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
         const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
