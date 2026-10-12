@@ -91,7 +91,8 @@
             const parsed = Number.parseInt(value, 10);
             return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
         };
-        const isViewMode = urlParams.get('view') === '1' || urlParams.get('obs') === '1';
+        const routePath = window.location.pathname.replace(/\/+$/, '') || '/';
+        const isViewMode = routePath === '/view' || urlParams.get('view') === '1' || urlParams.get('obs') === '1';
         
         let state = {
             gameTitle: urlParams.get('title') || "ROBLOX // BUILDING A BOAT",
@@ -159,6 +160,7 @@
 
         function getObsUrl() {
             const url = new URL(window.location.href);
+            url.pathname = '/view';
             url.search = '';
             url.hash = '';
             const params = url.searchParams;
@@ -170,7 +172,6 @@
             params.set('clock', state.showClock ? '1' : '0');
             params.set('timer', state.timerMode);
             params.set('cdmins', state.cdMins);
-            params.set('view', '1');
 
             return url.toString();
         }
