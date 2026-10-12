@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudflare OBS Link Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cf-orange: #f38020;
+            --cf-amber: #faad14;
+            --bg-dark: #0b0f19;
+            --panel-bg: rgba(18, 24, 38, 0.85);
+            --panel-border: rgba(243, 128, 32, 0.2);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary-glow: rgba(243, 128, 32, 0.35);
+            --hue-deg: 0deg;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(243, 128, 32, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(250, 173, 20, 0.05) 0%, transparent 40%);
+            overflow-x: hidden;
+        }
+
+        header {
+            background: rgba(11, 15, 25, 0.9);
+            border-bottom: 1px solid var(--panel-border);
+            padding: 1.25rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            fill: var(--cf-orange);
+            filter: drop-shadow(0 0 8px var(--primary-glow));
+        }
+
+        .logo-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 0%, var(--cf-orange) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge {
+            background: rgba(243, 128, 32, 0.15);
+            color: var(--cf-orange);
+            border: 1px solid rgba(243, 128, 32, 0.4);
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 2rem;
+            flex: 1;
+            width: 100%;
+        }
+
+        @media (max-width: 1100px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #fff;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type="text"], select {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: var(--cf-orange);
+            box-shadow: 0 0 0 3px rgba(243, 128, 32, 0.2);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--cf-orange);
+            cursor: pointer;
+        }
+
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            background: rgba(243, 128, 32, 0.2);
+            border-color: var(--cf-orange);
+            color: #fff;
+        }
+
+        .url-box {
+            background: #06080e;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .url-output {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--cf-amber);
+            word-break: break-all;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px dashed rgba(250, 173, 20, 0.3);
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cf-orange) 0%, #d96b12 100%);
+            color: #fff;
+            border: none;
+            padding: 0.85rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 14px var(--primary-glow);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .preview-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .viewport {
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            background-image: 
+                linear-gradient(45deg, #151b28 25%, transparent 25%), 
+                linear-gradient(-45deg, #151b28 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #151b28 75%), 
+                linear-gradient(-45deg, transparent 75%, #151b28 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        /* Mock Overlay Container inside Preview */
+        .overlay-mock {
+            width: 100%;
+            height: 100%;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            filter: hue-rotate(var(--hue-deg));
+            box-sizing: border-box;
+        }
+
+        .overlay-frame {
+            position: absolute;
+            inset: 12px;
+            border: 3px solid var(--cf-orange);
+            border-radius: 16px;
+            pointer-events: none;
+            box-shadow: 0 0 20px var(--primary-glow), inset 0 0 20px var(--primary-glow);
+        }
+
+        .mock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .mock-title-card {
+            background: rgba(11, 15, 25, 0.85);
+            border: 1px solid var(--cf-orange);
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            backdrop-filter: blur(8px);
+        }
+
+        .mock-stream-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .mock-game-title {
+            font-size: 0.8rem;
+            color: var(--cf-orange);
+            font-weight: 600;
+        }
+
+        .mock-badge {
+            background: var(--cf-orange);
+            color: #000;
+            font-weight: 800;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #10b981;
+            color: #fff;
+            padding: 0.85rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-group">
+            <svg class="logo-icon" viewBox="0 0 24 24">
+                <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
+            </svg>
+            <span class="logo-title">Cloudflare Worker OBS Generator</span>
+        </div>
+        <span class="badge">PROD // WORKER-ROUTER</span>
+    </header>
+
+    <main class="container">
+        <!-- CONTROL PANEL -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    Stream Configuration
+                </span>
+            </div>
+
+            <!-- Worker Domain -->
+            <div class="form-group">
+                <label for="workerDomain">Cloudflare Worker URL</label>
+                <input type="text" id="workerDomain" value="https://stream-layout.your-subdomain.workers.dev" placeholder="https://your-worker.workers.dev">
+            </div>
+
+            <!-- Title -->
+            <div class="form-group">
+                <label for="streamTitle">Stream Title</label>
+                <input type="text" id="streamTitle" value="Chill Gaming & Vibe Session">
+            </div>
+
+            <!-- Game/Category -->
+            <div class="form-group">
+                <label for="gameCategory">Game / Category</label>
+                <input type="text" id="gameCategory" value="Valorant">
+            </div>
+
+            <!-- Status Tag -->
+            <div class="form-group">
+                <label for="statusTag">Status Banner</label>
+                <select id="statusTag">
+                    <option value="LIVE STREAM">LIVE STREAM</option>
+                    <option value="STARTING SOON">STARTING SOON</option>
+                    <option value="BE RIGHT BACK">BE RIGHT BACK</option>
+                    <option value="OFFLINE">OFFLINE</option>
+                </select>
+            </div>
+
+            <!-- Hue Slider -->
+            <div class="form-group">
+                <label for="hueSlider">
+                    <span>Color Theme (Hue Shift)</span>
+                    <span id="hueVal" style="color: var(--cf-orange);">0°</span>
+                </label>
+                <div class="slider-container">
+                    <input type="range" id="hueSlider" min="0" max="360" value="0">
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="form-group">
+                <label>Quick Presets</label>
+                <div class="presets-grid">
+                    <button class="preset-btn" onclick="applyPreset('gaming')">Gaming</button>
+                    <button class="preset-btn" onclick="applyPreset('chatting')">Chatting</button>
+                    <button class="preset-btn" onclick="applyPreset('brb')">BRB</button>
+                </div>
+            </div>
+
+            <!-- Generated URL Box -->
+            <div class="url-box">
+                <label>Final OBS Browser Source Link</label>
+                <div class="url-output" id="finalUrl">Generating URL...</div>
+                <button class="btn-primary" onclick="copyUrl()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copy OBS URL
+                </button>
+            </div>
+        </div>
+
+        <!-- PREVIEW PANEL -->
+        <div class="preview-wrapper">
+            <div class="card">
+                <div class="preview-header">
+                    <span class="card-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        Live 1080p Viewport Simulation
+                    </span>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);">1920 x 1080</span>
+                </div>
+
+                <div class="viewport">
+                    <div class="overlay-mock" id="mockOverlay">
+                        <div class="overlay-frame"></div>
+                        <div class="mock-header">
+                            <div class="mock-title-card">
+                                <div class="mock-stream-title" id="mockTitle">Chill Gaming & Vibe Session</div>
+                                <div class="mock-game-title" id="mockGame">Valorant</div>
+                            </div>
+                            <div class="mock-badge" id="mockStatus">LIVE STREAM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toast">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>Link copied to clipboard! Paste in OBS Browser Source.</span>
+    </div>
+
+    <script>
+        const workerDomain = document.getElementById('workerDomain');
+        const streamTitle = document.getElementById('streamTitle');
+        const gameCategory = document.getElementById('gameCategory');
+        const statusTag = document.getElementById('statusTag');
+        const hueSlider = document.getElementById('hueSlider');
+        const hueVal = document.getElementById('hueVal');
+        const finalUrl = document.getElementById('finalUrl');
+
+        const mockTitle = document.getElementById('mockTitle');
+        const mockGame = document.getElementById('mockGame');
+        const mockStatus = document.getElementById('mockStatus');
+        const mockOverlay = document.getElementById('mockOverlay');
+        const toast = document.getElementById('toast');
+
+        function updateGenerator() {
+            const baseUrl = workerDomain.value.trim() || 'https://stream-layout.your-subdomain.workers.dev';
+            const title = encodeURIComponent(streamTitle.value.trim());
+            const game = encodeURIComponent(gameCategory.value.trim());
+            const status = encodeURIComponent(statusTag.value);
+            const hue = hueSlider.value;
+
+            hueVal.textContent = `${hue}°`;
+
+            // Build query params
+            const generated = `${baseUrl}/?title=${title}&game=${game}&status=${status}&hue=${hue}`;
+            finalUrl.textContent = generated;
+
+            // Update Mock Preview
+            mockTitle.textContent = streamTitle.value.trim() || 'Untitled Stream';
+            mockGame.textContent = gameCategory.value.trim() || 'General';
+            mockStatus.textContent = statusTag.value;
+            mockOverlay.style.setProperty('--hue-deg', `${hue}deg`);
+        }
+
+        function applyPreset(type) {
+            if (type === 'gaming') {
+                streamTitle.value = 'Ranked Grind to Radiant';
+                gameCategory.value = 'Valorant';
+                statusTag.value = 'LIVE STREAM';
+                hueSlider.value = 0;
+            } else if (type === 'chatting') {
+                streamTitle.value = 'Q&A, Memes & Chill Chatting';
+                gameCategory.value = 'Just Chatting';
+                statusTag.value = 'LIVE STREAM';
+                hueSlider.value = 210;
+            } else if (type === 'brb') {
+                streamTitle.value = 'Grabing Snacks & Water';
+                gameCategory.value = 'Be Right Back';
+                statusTag.value = 'BE RIGHT BACK';
+                hueSlider.value = 280;
+            }
+            updateGenerator();
+        }
+
+        function copyUrl() {
+            navigator.clipboard.writeText(finalUrl.textContent).then(() => {
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            });
+        }
+
+        // Event Listeners
+        [workerDomain, streamTitle, gameCategory, statusTag, hueSlider].forEach(input => {
+            input.addEventListener('input', updateGenerator);
+            input.addEventListener('change', updateGenerator);
+        });
+
+        // Initialize
+        updateGenerator();
+    </script>
+</body>
+</html>
