@@ -36,8 +36,12 @@
   }
   @keyframes spin { to { --a: 360deg; } }
 
-  #game { left: 22px;   top: 22px; width: 1536px; height: 864px; }
-  #cam  { left: 1584px; top: 30px; width: 312px;  height: 312px; }
+  #game { left: 22px; top: 22px; width: 1536px; height: 864px; transition: width 0.3s ease; }
+  #cam  { left: 1584px; top: 30px; width: 312px;  height: 312px; transition: opacity 0.3s ease; }
+
+  /* Class applied when webcam is hidden */
+  body.no-cam #game { width: 1872px; }
+  body.no-cam #cam { display: none; }
 
   /* little corner brackets on the game frame */
   .corner { position: absolute; width: 34px; height: 34px; border: 3px solid #fff;
@@ -75,9 +79,13 @@
 
   /* ---------- clock card ---------- */
   #clock { left: 1584px; top: 360px; width: 312px; height: 252px; display: flex; flex-direction: column;
-           align-items: center; justify-content: center; gap: 10px; }
-  #clock.tall { height: 528px; gap: 18px; }   /* fills the column when the Time Live card is hidden */
+           align-items: center; justify-content: center; gap: 10px; transition: all 0.3s ease; }
+  #clock.tall { height: 528px; gap: 18px; }   /* fills the space when uptime is hidden */
+  #clock.full-column { top: 30px; height: 578px; gap: 18px; } /* fills top half when cam is gone + uptime on */
+  #clock.absolute-tall { top: 30px; height: 858px; gap: 24px; } /* fills entire column when cam AND uptime are gone */
+  
   #time { font-size: 56px; line-height: 1; }
+  #clock.absolute-tall #time { font-size: 72px; }
   #time .colon { color: var(--c2); animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: .15; } }
   #date { font: 600 20px/1 'Rajdhani', sans-serif; letter-spacing: .26em; color: rgba(255,255,255,.8); padding-left: .26em; }
@@ -86,7 +94,8 @@
 
   /* ---------- uptime ring card ---------- */
   #uptime { left: 1584px; top: 636px; width: 312px; height: 252px; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 10px; }
+            align-items: center; justify-content: center; gap: 10px; transition: all 0.3s ease; }
+  #uptime.full-column { top: 630px; height: 258px; } /* shifts down nicely when cam is gone */
   #ringwrap { position: relative; width: 176px; height: 176px; }
   #ringwrap svg { position: absolute; inset: 0; transform: rotate(-90deg); }
   #uptxt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 25px; }
@@ -110,9 +119,9 @@
           height: 20%; animation: eq 1s ease-in-out infinite alternate; }
   @keyframes eq { to { height: 100%; } }
 
-  /* ---------- status tab (hidden until you turn it on) ---------- */
+  /* ---------- status tab ---------- */
   #status {
-    display: none;                       /* turn on from OBS CSS: #status { display: flex !important; } */
+    display: none;
     position: absolute; left: 792px; top: 2px; transform: translateX(-50%);
     z-index: 10; align-items: center; gap: 14px; padding: 12px 34px; border-radius: 40px;
     background:
@@ -135,22 +144,20 @@
 
 <body translate="no">
 
-  <!-- solid black backdrop with see-through holes for the game + cam, so nothing behind can clip through -->
+  <!-- solid black backdrop with see-through holes -->
   <svg id="bg" width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;left:0;top:0">
-    <path fill="#000" fill-rule="evenodd" d="
+    <path id="bg-path" fill="#000" fill-rule="evenodd" d="
       M0 0 H1920 V1080 H0 Z
       M46 24 H1538 A22 30 0 0 1 1560 46 V866 A22 22 0 0 1 1538 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
       M1606 24 H1874 A22 30 0 0 1 1896 46 V314 A22 22 0 0 1 1874 336 H1606 A22 30 0 0 1 1584 314 V46 A22 30 0 0 1 1606 24 Z"/>
   </svg>
 
-  <!-- see-through windows: put your Game Capture inside #game and your webcam inside #cam -->
   <div class="frame" id="game">
     <div class="corner tl"></div><div class="corner tr"></div>
     <div class="corner bl"></div><div class="corner br"></div>
   </div>
   <div class="frame" id="cam"></div>
 
-  <!-- status tab: off by default, see the notes in the script below -->
   <div id="status"></div>
 
   <div class="card" id="clock">
@@ -185,25 +192,6 @@
   </div>
 
 <script>
-/*
-  Use as a 1920x1080 Browser Source in OBS (Local file), layered ABOVE your game + cam sources.
-  Options, add to the URL:
-    ?title=My+Stream+Title      big text at the bottom
-    ?game=Roblox                small text under it
-    ?hue=190                    color theme (280 purple, 190 cyan, 340 pink, 120 green)
-    ?bg=0                       turn the black background off (see-through again)
-    ?status=BRB                 status tab at the top (no ?status, or ?status=0, keeps it hidden)
-    ?uptime=0                   hide the "Time Live" counter (leave it off to show it)
-    ?reset=1                    restart the "time live" counter (load once, then remove it)
-
-  Status from OBS Custom CSS instead of the URL:
-    #status { display: flex !important; }
-    #status::after { content: "BRB"; }
-
-  Hide the Time Live counter from OBS Custom CSS:
-    #uptime { display: none !important; }
-    #clock { height: 528px !important; }
-*/
 var q = {};
 location.search.substring(1).split('&').forEach(function (p) {
   if (!p) return;
@@ -214,19 +202,39 @@ if (q.hue) document.documentElement.style.setProperty('--h', q.hue);
 if (q.title) document.getElementById('title').textContent = q.title;
 if (q.game)  document.getElementById('game-name').textContent = q.game;
 if (q.bg === '0') document.getElementById('bg').style.display = 'none';
-// status tab: ?status=BRB shows it, ?status=0 (or no status) keeps it hidden
+
 if (q.status && q.status !== '0' && q.status !== 'off') {
   var st = document.getElementById('status');
   st.textContent = q.status;
   st.style.display = 'flex';
 }
-// "Time Live" counter: ?uptime=0 hides it and the clock card grows to fill the space
-if (q.uptime === '0' || q.uptime === 'off') {
-  document.getElementById('uptime').style.display = 'none';
-  document.getElementById('clock').classList.add('tall');
+
+var uptimeDisabled = (q.uptime === '0' || q.uptime === 'off' || document.getElementById('uptime').style.display === 'none');
+var camDisabled = (q.cam === '0' || q.cam === 'off');
+
+if (camDisabled) {
+  document.body.classList.add('no-cam');
+  // Update the SVG mask background hole to expand the game viewport size across the entire right section
+  document.getElementById('bg-path').setAttribute('d', `
+    M0 0 H1920 V1080 H0 Z
+    M46 24 H1874 A22 30 0 0 1 1896 46 V866 A22 22 0 0 1 1874 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
+  `);
+
+  if (uptimeDisabled) {
+    document.getElementById('uptime').style.display = 'none';
+    document.getElementById('clock').classList.add('absolute-tall');
+  } else {
+    document.getElementById('clock').classList.add('full-column');
+    document.getElementById('uptime').classList.add('full-column');
+  }
+} else {
+  if (uptimeDisabled) {
+    document.getElementById('uptime').style.display = 'none';
+    document.getElementById('clock').classList.add('tall');
+  }
 }
 
-// equalizer bars (decorative)
+// equalizer bars
 var eq = document.getElementById('eq');
 for (var i = 0; i < 22; i++) {
   var b = document.createElement('b');
@@ -235,7 +243,6 @@ for (var i = 0; i < 22; i++) {
   eq.appendChild(b);
 }
 
-// stream start time, survives scene switches
 var start;
 try {
   if (q.reset === '1' || !localStorage.getItem('streamStart')) localStorage.setItem('streamStart', Date.now());
