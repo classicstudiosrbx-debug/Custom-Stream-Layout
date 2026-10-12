@@ -39,10 +39,6 @@
   #game { left: 22px; top: 22px; width: 1536px; height: 864px; transition: width 0.3s ease; }
   #cam  { left: 1584px; top: 30px; width: 312px;  height: 312px; transition: opacity 0.3s ease; }
 
-  /* Class applied when webcam is hidden */
-  body.no-cam #game { width: 1872px; }
-  body.no-cam #cam { display: none; }
-
   /* little corner brackets on the game frame */
   .corner { position: absolute; width: 34px; height: 34px; border: 3px solid #fff;
             filter: drop-shadow(0 0 6px var(--c2)); }
@@ -60,6 +56,7 @@
       var(--card);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--c2) 45%, transparent),
                 0 0 30px color-mix(in srgb, var(--c1) 30%, transparent);
+    transition: all 0.3s ease;
   }
   .card::after { /* light sweep */
     content: ""; position: absolute; top: 0; bottom: 0; width: 70px; left: -120px;
@@ -79,26 +76,21 @@
 
   /* ---------- clock card ---------- */
   #clock { left: 1584px; top: 360px; width: 312px; height: 252px; display: flex; flex-direction: column;
-           align-items: center; justify-content: center; gap: 10px; transition: all 0.3s ease; }
-  #clock.tall { height: 528px; gap: 18px; }   /* fills the space when uptime is hidden */
-  #clock.full-column { top: 30px; height: 578px; gap: 18px; } /* fills top half when cam is gone + uptime on */
-  #clock.absolute-tall { top: 30px; height: 858px; gap: 24px; } /* fills entire column when cam AND uptime are gone */
+           align-items: center; justify-content: center; gap: 10px; }
   
   #time { font-size: 56px; line-height: 1; }
-  #clock.absolute-tall #time { font-size: 72px; }
   #time .colon { color: var(--c2); animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: .15; } }
   #date { font: 600 20px/1 'Rajdhani', sans-serif; letter-spacing: .26em; color: rgba(255,255,255,.8); padding-left: .26em; }
   #bar { width: 240px; height: 6px; border-radius: 6px; background: rgba(255,255,255,.1); overflow: hidden; margin-top: 4px; }
   #fill { height: 100%; width: 0; border-radius: 6px; background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3)); box-shadow: 0 0 12px var(--c2); }
 
-  /* ---------- uptime ring card ---------- */
-  #uptime { left: 1584px; top: 636px; width: 312px; height: 252px; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 10px; transition: all 0.3s ease; }
-  #uptime.full-column { top: 630px; height: 258px; } /* shifts down nicely when cam is gone */
+  /* ---------- timer card (uptime / countdown) ---------- */
+  #timerCard { left: 1584px; top: 636px; width: 312px; height: 252px; display: flex; flex-direction: column;
+               align-items: center; justify-content: center; gap: 10px; }
   #ringwrap { position: relative; width: 176px; height: 176px; }
   #ringwrap svg { position: absolute; inset: 0; transform: rotate(-90deg); }
-  #uptxt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 25px; }
+  #timerTxt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 25px; }
   #ring { filter: drop-shadow(0 0 6px var(--c2)); }
 
   /* ---------- bottom title strip ---------- */
@@ -167,8 +159,8 @@
     <div id="bar"><div id="fill"></div></div>
   </div>
 
-  <div class="card" id="uptime">
-    <div class="label">Time Live</div>
+  <div class="card" id="timerCard">
+    <div class="label" id="timerLabel">Time Live</div>
     <div id="ringwrap">
       <svg width="176" height="176" viewBox="0 0 176 176">
         <circle cx="88" cy="88" r="78" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/>
@@ -178,7 +170,7 @@
           <stop offset="0" stop-color="hsl(var(--h) 100% 62%)"/><stop offset="1" stop-color="hsl(calc(var(--h) + 140) 100% 62%)"/>
         </linearGradient></defs>
       </svg>
-      <div class="glow" id="uptxt">00:00:00</div>
+      <div class="glow" id="timerTxt">00:00:00</div>
     </div>
   </div>
 
@@ -209,32 +201,66 @@ if (q.status && q.status !== '0' && q.status !== 'off') {
   st.style.display = 'flex';
 }
 
-var uptimeDisabled = (q.uptime === '0' || q.uptime === 'off' || document.getElementById('uptime').style.display === 'none');
 var camDisabled = (q.cam === '0' || q.cam === 'off');
+var clockDisabled = (q.clock === '0' || q.clock === 'off');
+var timerMode = q.timer || 'uptime'; // 'uptime', 'countdown', 'none'
+var cdMins = parseInt(q.cdmins) || 15;
 
+var clockEl = document.getElementById('clock');
+var timerEl = document.getElementById('timerCard');
+var camEl = document.getElementById('cam');
+var bgPath = document.getElementById('bg-path');
+
+// Configure Timer Label
+if (timerMode === 'countdown') {
+  document.getElementById('timerLabel').textContent = 'Countdown';
+} else if (timerMode === 'none') {
+  timerEl.style.display = 'none';
+}
+if (clockDisabled) {
+  clockEl.style.display = 'none';
+}
+
+// Layout & Positioning logic based on active modules
 if (camDisabled) {
-  document.body.classList.add('no-cam');
-  // Update the SVG mask background hole to expand the game viewport size across the entire right section
-  document.getElementById('bg-path').setAttribute('d', `
+  camEl.style.display = 'none';
+  
+  // Game window fills full width above the bottom strip
+  bgPath.setAttribute('d', `
     M0 0 H1920 V1080 H0 Z
     M46 24 H1874 A22 30 0 0 1 1896 46 V866 A22 22 0 0 1 1874 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
   `);
 
-  if (uptimeDisabled) {
-    document.getElementById('uptime').style.display = 'none';
-    document.getElementById('clock').classList.add('absolute-tall');
-  } else {
-    document.getElementById('clock').classList.add('full-column');
-    document.getElementById('uptime').classList.add('full-column');
+  // Handle right-hand side stacking when cam is off
+  if (!clockDisabled && timerMode !== 'none') {
+    // Both active: share the column vertically
+    clockEl.style.top = '30px';
+    clockEl.style.height = '420px';
+    timerEl.style.top = '468px';
+    timerEl.style.height = '420px';
+  } else if (!clockDisabled && timerMode === 'none') {
+    // Only clock active: fill column
+    clockEl.style.top = '30px';
+    clockEl.style.height = '858px';
+  } else if (clockDisabled && timerMode !== 'none') {
+    // Only timer active: MOVE TO BOTTOM RIGHT as requested
+    timerEl.style.top = '636px';
+    timerEl.style.height = '252px';
   }
 } else {
-  if (uptimeDisabled) {
-    document.getElementById('uptime').style.display = 'none';
-    document.getElementById('clock').classList.add('tall');
+  // Cam is active
+  if (!clockDisabled && timerMode === 'none') {
+    // Cam + Clock (Timer disabled) -> Clock moves up to fill space
+    clockEl.style.top = '360px';
+    clockEl.style.height = '528px';
+  } else if (clockDisabled && timerMode !== 'none') {
+    // Cam + Timer (Clock disabled) -> Timer moves up into clock's spot
+    timerEl.style.top = '360px';
+    timerEl.style.height = '528px';
   }
 }
 
-// equalizer bars
+// Equalizer bars
 var eq = document.getElementById('eq');
 for (var i = 0; i < 22; i++) {
   var b = document.createElement('b');
@@ -243,11 +269,18 @@ for (var i = 0; i < 22; i++) {
   eq.appendChild(b);
 }
 
+// Timer initializations
 var start;
 try {
   if (q.reset === '1' || !localStorage.getItem('streamStart')) localStorage.setItem('streamStart', Date.now());
   start = +localStorage.getItem('streamStart');
 } catch (e) { start = Date.now(); }
+
+var cdStart;
+try {
+  if (q.reset === '1' || !localStorage.getItem('cdStart')) localStorage.setItem('cdStart', Date.now());
+  cdStart = +localStorage.getItem('cdStart');
+} catch (e) { cdStart = Date.now(); }
 
 var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -256,15 +289,30 @@ var C = 2 * Math.PI * 78;
 
 function frame() {
   var d = new Date();
-  document.getElementById('day').textContent = DAYS[d.getDay()];
-  document.getElementById('time').innerHTML = pad(d.getHours()) + '<span class="colon">:</span>' + pad(d.getMinutes());
-  document.getElementById('date').textContent = pad(d.getDate()) + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
-  var secs = d.getSeconds() + d.getMilliseconds() / 1000;
-  document.getElementById('fill').style.width = (secs / 60 * 100) + '%';
+  if (!clockDisabled) {
+    document.getElementById('day').textContent = DAYS[d.getDay()];
+    document.getElementById('time').innerHTML = pad(d.getHours()) + '<span class="colon">:</span>' + pad(d.getMinutes());
+    document.getElementById('date').textContent = pad(d.getDate()) + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+    var secs = d.getSeconds() + d.getMilliseconds() / 1000;
+    document.getElementById('fill').style.width = (secs / 60 * 100) + '%';
+  }
 
-  var t = Math.max(0, Math.floor((Date.now() - start) / 1000));
-  document.getElementById('uptxt').textContent = pad(Math.floor(t / 3600)) + ':' + pad(Math.floor(t / 60) % 60) + ':' + pad(t % 60);
-  document.getElementById('ring').setAttribute('stroke-dashoffset', C * (1 - (t % 60) / 60 - 0));
+  if (timerMode !== 'none') {
+    if (timerMode === 'uptime') {
+      var t = Math.max(0, Math.floor((Date.now() - start) / 1000));
+      document.getElementById('timerTxt').textContent = pad(Math.floor(t / 3600)) + ':' + pad(Math.floor(t / 60) % 60) + ':' + pad(t % 60);
+      document.getElementById('ring').setAttribute('stroke-dashoffset', C * (1 - (t % 60) / 60));
+    } else if (timerMode === 'countdown') {
+      var totalSecs = cdMins * 60;
+      var elapsed = Math.floor((Date.now() - cdStart) / 1000);
+      var remaining = Math.max(0, totalSecs - elapsed);
+      var hrs = Math.floor(remaining / 3600);
+      var mins = Math.floor((remaining % 3600) / 60);
+      var secs = remaining % 60;
+      document.getElementById('timerTxt').textContent = pad(hrs) + ':' + pad(mins) + ':' + pad(secs);
+      document.getElementById('ring').setAttribute('stroke-dashoffset', C * (1 - (remaining % 60) / 60));
+    }
+  }
 
   requestAnimationFrame(frame);
 }
