@@ -124,10 +124,10 @@
         let tickerInterval = null;
 
         function getObsUrl() {
-            const baseUrl = window.location.href.split('?')[0];
-            const params = new URLSearchParams();
+            let baseUrl = window.location.href.split('?')[0].replace('index.html', '');
+            if (!baseUrl.endsWith('/')) baseUrl += '/';
             
-            params.set('view', '1');
+            const params = new URLSearchParams();
             params.set('hue', state.hue);
             params.set('title', state.gameTitle);
             params.set('game', state.gameSubtitle);
@@ -137,9 +137,8 @@
             params.set('timer', state.timerMode);
             params.set('cdmins', state.cdMins);
 
-            return baseUrl + '?' + params.toString();
+            return baseUrl + 'view?' + params.toString();
         }
-
         function render() {
             const app = document.getElementById('app');
             
