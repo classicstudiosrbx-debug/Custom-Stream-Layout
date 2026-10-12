@@ -242,13 +242,13 @@ if (camDisabled) {
     timerEl.style.top = '468px';
     timerEl.style.height = '420px';
   } else if (!clockDisabled && timerMode === 'none') {
-    // Only clock active: fill column
-    clockEl.style.top = '30px';
-    clockEl.style.height = '858px';
+    // Only clock active: keep it down in the lower section without stretching to the top
+    clockEl.style.top = '360px';
+    clockEl.style.height = '528px';
   } else if (clockDisabled && timerMode !== 'none') {
-    // Only timer active: MOVE TO BOTTOM RIGHT as requested
-    timerEl.style.top = '636px';
-    timerEl.style.height = '252px';
+    // Only timer active: keep it down in the lower section
+    timerEl.style.top = '360px';
+    timerEl.style.height = '528px';
   }
 } else {
   // Cam is active
