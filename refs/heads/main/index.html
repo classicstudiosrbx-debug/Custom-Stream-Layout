@@ -123,6 +123,22 @@
 
         let tickerInterval = null;
 
+        function getObsUrl() {
+            const currentUrl = window.location.href.split('?')[0];
+            const params = new URLSearchParams({
+                view: '1',
+                hue: state.hue,
+                title: state.gameTitle,
+                game: state.gameSubtitle,
+                status: state.statusText,
+                cam: state.showFacecam ? '1' : '0',
+                clock: state.showClock ? '1' : '0',
+                timer: state.timerMode,
+                cdmins: state.cdMins
+            });
+            return currentUrl + '?' + params.toString();
+        }
+
         function render() {
             const app = document.getElementById('app');
             
@@ -144,14 +160,28 @@
                         <div class="flex items-center space-x-3">
                             <button onclick="openOBSView()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-purple-600/25 transition-all flex items-center space-x-2">
                                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                <span>Open OBS Browser Source URL</span>
+                                <span>Preview Overlay Window</span>
                             </button>
                         </div>
                     </header>
 
                     <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
                         <!-- Controls Sidebar -->
-                        <aside class="w-full lg:w-96 bg-slate-900/80 backdrop-blur-md border-r border-slate-800 p-6 overflow-y-auto space-y-6">
+                        <aside class="w-full lg:w-[420px] bg-slate-900/80 backdrop-blur-md border-r border-slate-800 p-6 overflow-y-auto space-y-6 shrink-0">
+                            
+                            <!-- OBS URL Box & Copy -->
+                            <div class="bg-slate-950 border border-purple-500/30 rounded-2xl p-4 shadow-xl shadow-purple-950/2ul">
+                                <h2 class="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2 flex items-center justify-between">
+                                    <span class="flex items-center space-x-2"><i class="fa-solid fa-link"></i><span>OBS Browser Source URL</span></span>
+                                    <button onclick="copyObsUrl()" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1.5 font-medium">
+                                        <i class="fa-solid fa-copy"></i><span id="copy-btn-text">Copy URL</span>
+                                    </button>
+                                </h2>
+                                <input type="text" id="obs-url-input" readonly value="${getObsUrl()}" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-300 select-all focus:outline-none">
+                                <p class="text-[11px] text-slate-400 mt-2">Paste this exact URL into an OBS Browser Source set to 1920×1080.</p>
+                            </div>
+
+                            <!-- Stream Info -->
                             <div>
                                 <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
                                     <i class="fa-solid fa-display text-purple-400"></i>
@@ -175,6 +205,7 @@
 
                             <hr class="border-slate-800">
 
+                            <!-- Theme & Hue -->
                             <div>
                                 <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
                                     <i class="fa-solid fa-palette text-purple-400"></i>
@@ -183,14 +214,15 @@
                                 <div>
                                     <div class="flex justify-between text-xs text-slate-400 mb-1">
                                         <span>Hue Angle</span>
-                                        <span class="font-mono text-white">${state.hue}°</span>
+                                        <span class="font-mono text-white" id="hue-val-label">${state.hue}°</span>
                                     </div>
-                                    <input type="range" min="0" max="360" value="${state.hue}" oninput="updateHue(this.value)" class="w-full accent-purple-500 bg-slate-950 cursor-pointer">
+                                    <input type="range" min="0" max="360" value="${state.hue}" oninput="updateHueLive(this.value)" onchange="updateHueFinal(this.value)" class="w-full accent-purple-500 bg-slate-950 cursor-pointer">
                                 </div>
                             </div>
 
                             <hr class="border-slate-800">
 
+                            <!-- Layout Modules -->
                             <div>
                                 <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
                                     <i class="fa-solid fa-layer-group text-purple-400"></i>
@@ -217,6 +249,7 @@
 
                             <hr class="border-slate-800">
 
+                            <!-- Timer Settings -->
                             <div>
                                 <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
                                     <i class="fa-solid fa-stopwatch text-purple-400"></i>
@@ -242,20 +275,36 @@
                                     ` : ''}
                                 </div>
                             </div>
+
+                            <hr class="border-slate-800">
+
+                            <!-- Guide & Instructions Card -->
+                            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+                                <h2 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center space-x-2">
+                                    <i class="fa-solid fa-circle-question"></i><span>How to Use & OBS Guide</span>
+                                </h2>
+                                <ol class="text-xs text-slate-300 space-y-2 list-decimal pl-4">
+                                    <li>Customize your titles, color hue, and widgets in this Studio dashboard.</li>
+                                    <li>Click the <b>Copy URL</b> button at the top of this sidebar.</li>
+                                    <li>Open <b>OBS Studio</b> and go to your Scene.</li>
+                                    <li>Click <b>+</b> under Sources and select <b>Browser</b>.</li>
+                                    <li>Paste your copied URL into the URL field.</li>
+                                    <li>Set both <b>Width</b> to <code class="text-purple-400">1920</code> and <b>Height</b> to <code class="text-purple-400">1080</code>, then click OK.</li>
+                                </ol>
+                            </div>
+
                         </aside>
 
                         <!-- Preview Area -->
-                        <div class="flex-1 bg-slate-900 p-6 flex flex-col items-center justify-center overflow-auto relative">
-                            <div class="absolute top-4 left-6 text-xs text-slate-400 flex items-center space-x-2">
+                        <div id="preview-wrapper" class="flex-1 bg-slate-900 p-6 flex flex-col items-center justify-center overflow-hidden relative">
+                            <div class="absolute top-4 left-6 text-xs text-slate-400 flex items-center space-x-2 z-10">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                 <span>Live Overlay Preview (Scaled 1920x1080)</span>
                             </div>
 
-                            <div class="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-slate-800">
-                                <div class="absolute inset-0 origin-top-left transform" id="preview-scale-container">
-                                    <div style="width: 1920px; height: 1080px; position: relative; transform-origin: top left;" id="preview-inner">
-                                        ${renderLayoutHTML(false)}
-                                    </div>
+                            <div id="preview-box" class="bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-slate-800 flex items-center justify-center">
+                                <div style="width: 1920px; height: 1080px; position: absolute; top: 0; left: 0; transform-origin: top left;" id="preview-inner">
+                                    ${renderLayoutHTML(false)}
                                 </div>
                             </div>
                         </div>
@@ -269,12 +318,18 @@
         }
 
         function updatePreviewScale() {
-            const container = document.querySelector('.max-w-5xl');
+            const wrapper = document.getElementById('preview-wrapper');
+            const box = document.getElementById('preview-box');
             const inner = document.getElementById('preview-inner');
-            if (container && inner) {
-                const scale = container.clientWidth / 1920;
+            
+            if (wrapper && box && inner) {
+                const maxWidth = wrapper.clientWidth - 48;
+                const maxHeight = wrapper.clientHeight - 64;
+                const scale = Math.min(maxWidth / 1920, maxHeight / 1080, 1);
+                
                 inner.style.transform = `scale(${scale})`;
-                container.style.height = `${1080 * scale}px`;
+                box.style.width = `${1920 * scale}px`;
+                box.style.height = `${1080 * scale}px`;
             }
         }
 
@@ -380,9 +435,18 @@
             render();
         }
 
-        function updateHue(val) {
+        // Live smooth hue updates during dragging
+        function updateHueLive(val) {
             state.hue = parseInt(val);
             document.documentElement.style.setProperty('--h', state.hue);
+            const label = document.getElementById('hue-val-label');
+            if (label) label.textContent = state.hue + '°';
+            const urlInput = document.getElementById('obs-url-input');
+            if (urlInput) urlInput.value = getObsUrl();
+        }
+
+        function updateHueFinal(val) {
+            state.hue = parseInt(val);
             saveState();
             render();
         }
@@ -408,20 +472,21 @@
             } catch(e) {}
         }
 
+        function copyObsUrl() {
+            const urlInput = document.getElementById('obs-url-input');
+            if (urlInput) {
+                urlInput.select();
+                navigator.clipboard.writeText(urlInput.value);
+                const btnText = document.getElementById('copy-btn-text');
+                if (btnText) {
+                    btnText.textContent = 'Copied!';
+                    setTimeout(() => { btnText.textContent = 'Copy URL'; }, 2000);
+                }
+            }
+        }
+
         function openOBSView() {
-            const currentUrl = window.location.href.split('?')[0];
-            const params = new URLSearchParams({
-                view: '1',
-                hue: state.hue,
-                title: state.gameTitle,
-                game: state.gameSubtitle,
-                status: state.statusText,
-                cam: state.showFacecam ? '1' : '0',
-                clock: state.showClock ? '1' : '0',
-                timer: state.timerMode,
-                cdmins: state.cdMins
-            });
-            window.open(currentUrl + '?' + params.toString(), '_blank', 'width=1280,height=720');
+            window.open(getObsUrl(), '_blank', 'width=1280,height=720');
         }
 
         function escapeHtml(str) {
@@ -434,7 +499,7 @@
         const C = 2 * Math.PI * 78;
 
         function initLiveTickers() {
-            if (tickerInterval) clearInterval(tickerInterval); // Fix: Clear previous interval to prevent stacking leaks
+            if (tickerInterval) clearInterval(tickerInterval);
 
             tickerInterval = setInterval(() => {
                 const d = new Date();
