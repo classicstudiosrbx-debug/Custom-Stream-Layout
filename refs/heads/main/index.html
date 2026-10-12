@@ -492,6 +492,37 @@
 };</pre>
                 </div>
 
+                <!-- Step-by-Step Wrangler & Dashboard Deployment Instructions -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-cf-border">
+                    <div class="space-y-3">
+                        <h3 class="font-orbitron text-xs font-bold text-cf-orange flex items-center gap-2">
+                            <i class="fa-solid fa-globe"></i> METHOD A: CLOUDFLARE DASHBOARD (EASIEST)
+                        </h3>
+                        <ol class="space-y-2 text-xs text-slate-300 list-decimal pl-4">
+                            <li>Log in to your <strong>Cloudflare Dashboard</strong> $\rightarrow$ Navigate to <strong>Workers & Pages</strong>.</li>
+                            <li>Click <strong>Create Application</strong> $\rightarrow$ Select <strong>Create Worker</strong>.</li>
+                            <li>Name your worker (e.g., <code class="text-cf-orange">stream-layout</code>) and click <strong>Deploy</strong>.</li>
+                            <li>Click <strong>Edit Code</strong>, paste the JavaScript code above, and click <strong>Save and Deploy</strong>.</li>
+                        </ol>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="font-orbitron text-xs font-bold text-cf-cyan flex items-center gap-2">
+                            <i class="fa-solid fa-terminal"></i> METHOD B: WRANGLER CLI
+                        </h3>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 space-y-1">
+                            <div class="text-slate-500"># Create new Wrangler worker project</div>
+                            <div>npm create cloudflare@latest stream-layout</div>
+                            <div class="text-slate-500 pt-1"># Deploy directly to Cloudflare</div>
+                            <div>npx wrangler deploy</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
         <!-- ================= TAB 3: OBS INTEGRATION GUIDE ================= -->
         <div id="tab-guide" class="hidden space-y-6">
             
