@@ -244,7 +244,7 @@
             let fullUrl = `${baseUrl.replace(/\/$/, '')}/view?title=${encodeURIComponent(title)}&game=${encodeURIComponent(game)}&hue=${hue}`;
             
             if (status) fullUrl += `&status=${encodeURIComponent(status)}`;
-            if (isBgTransparent) fullUrl += `&bg=0`;
+            if (isBgTransparent) fullUrl += `&hue=0?`;
             if (isUptimeHidden) fullUrl += `&uptime=0`;
             if (resetParam) fullUrl += `&reset=1`;
             
