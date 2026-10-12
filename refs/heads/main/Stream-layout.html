@@ -39,13 +39,25 @@
   #game { left: 22px; top: 22px; width: 1536px; height: 864px; transition: width 0.3s ease; }
   #cam  { left: 1584px; top: 30px; width: 312px;  height: 312px; transition: opacity 0.3s ease; }
 
-  /* little corner brackets on the game frame */
-  .corner { position: absolute; width: 34px; height: 34px; border: 3px solid #fff;
-            filter: drop-shadow(0 0 6px var(--c2)); }
-  .corner.tl { top: 14px; left: 14px;  border-right: 0; border-bottom: 0; border-top-left-radius: 10px; }
-  .corner.tr { top: 14px; right: 14px; border-left: 0;  border-bottom: 0; border-top-right-radius: 10px; }
-  .corner.bl { bottom: 14px; left: 14px;  border-right: 0; border-top: 0; border-bottom-left-radius: 10px; }
-  .corner.br { bottom: 14px; right: 14px; border-left: 0;  border-top: 0; border-bottom-right-radius: 10px; }
+  /* polished corner brackets on the game frame */
+  .corner { position: absolute; width: 46px; height: 46px; border: 2px solid rgba(255,255,255,.94);
+            z-index: 2; filter: drop-shadow(0 0 6px var(--c2)); }
+  .corner::before { content: ""; position: absolute; width: 14px; height: 2px;
+                    background: var(--c2); box-shadow: 0 0 8px var(--c2); }
+  .corner::after { content: ""; position: absolute; width: 6px; height: 6px; border-radius: 50%;
+                   background: var(--c3); box-shadow: 0 0 9px var(--c3); }
+  .corner.tl { top: 16px; left: 16px; border-right: 0; border-bottom: 0; border-top-left-radius: 12px; }
+  .corner.tl::before { top: -2px; right: 8px; }
+  .corner.tl::after { top: -4px; left: -4px; }
+  .corner.tr { top: 16px; right: 16px; border-left: 0; border-bottom: 0; border-top-right-radius: 12px; }
+  .corner.tr::before { top: -2px; left: 8px; }
+  .corner.tr::after { top: -4px; right: -4px; }
+  .corner.bl { bottom: 16px; left: 16px; border-right: 0; border-top: 0; border-bottom-left-radius: 12px; }
+  .corner.bl::before { bottom: -2px; right: 8px; }
+  .corner.bl::after { bottom: -4px; left: -4px; }
+  .corner.br { bottom: 16px; right: 16px; border-left: 0; border-top: 0; border-bottom-right-radius: 12px; }
+  .corner.br::before { bottom: -2px; left: 8px; }
+  .corner.br::after { bottom: -4px; right: -4px; }
 
   /* ---------- cards ---------- */
   .card {
@@ -140,6 +152,8 @@
   body.no-neon .corner,
   body.no-neon #ring,
   body.no-neon #fill { filter: none !important; box-shadow: none !important; }
+  body.no-neon .corner::before,
+  body.no-neon .corner::after { box-shadow: none !important; }
   body.no-neon .label,
   body.no-neon .glow,
   body.no-neon #title,
