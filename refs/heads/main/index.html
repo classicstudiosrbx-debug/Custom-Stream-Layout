@@ -225,7 +225,6 @@
             const game = document.getElementById('inputGame').value;
             const status = document.getElementById('inputStatus').value;
             const hue = document.getElementById('inputHue').value;
-            const isBgTransparent = document.getElementById('checkBg').checked;
             const isUptimeHidden = document.getElementById('checkUptime').checked;
 
             document.documentElement.style.setProperty('--h', hue);
@@ -251,6 +250,13 @@
             updateLayout();
             alert("Reset parameter (?reset=1) added to URL! Load it once in OBS to restart the timer.");
             setTimeout(() => { resetParam = false; updateLayout(); }, 2000);
+        }
+
+        function copyLayoutUrl() {
+            const outputUrl = document.getElementById('outputUrl');
+            outputUrl.select();
+            navigator.clipboard.writeText(outputUrl.value);
+            alert("Overlay URL copied to clipboard!");
         }
 
         window.addEventListener('DOMContentLoaded', updateLayout);
