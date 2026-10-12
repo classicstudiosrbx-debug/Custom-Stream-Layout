@@ -92,7 +92,7 @@
             showClock: urlParams.get('clock') !== '0' && urlParams.get('clock') !== 'off',
             timerMode: urlParams.get('timer') || 'uptime',
             cdMins: parseInt(urlParams.get('cdmins')) || 15,
-            isViewMode: urlParams.get('view') === '1' || urlParams.get('obs') === '1'
+            isViewMode: window.location.pathname.includes('view') || urlParams.get('view') === '1' || urlParams.get('obs') === '1'
         };
 
         if (!state.isViewMode) {
@@ -125,10 +125,9 @@
 
         // Build valid URL query parameters using ? and &
        function getObsUrl() {
-            const baseUrl = window.location.href.split('?')[0];
+            const baseUrl = window.location.href.split('?')[0].replace('index.html', '');
             const params = new URLSearchParams();
             
-            params.set('view', '1'); // <--- Added so OBS loads the clean overlay mode
             params.set('hue', state.hue);
             params.set('title', state.gameTitle);
             params.set('game', state.gameSubtitle);
@@ -138,7 +137,7 @@
             params.set('timer', state.timerMode);
             params.set('cdmins', state.cdMins);
 
-            return baseUrl + '?' + params.toString();
+            return baseUrl + 'view?' + params.toString();
         }
 
         function render() {
