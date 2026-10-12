@@ -147,7 +147,8 @@
                 app.innerHTML = renderLayoutHTML(true);
                 initLiveTickers();
             } else {
-                const gameW = state.showFacecam ? 1536 : 1872;
+                const bothCardsActive = !state.showFacecam && state.showClock && state.timerMode !== 'none';
+                const gameW = (state.showFacecam || bothCardsActive) ? 1536 : 1872;
 
                 app.innerHTML = `
                     <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
@@ -339,13 +340,15 @@
             const clockDisabled = !state.showClock;
             const timerMode = state.timerMode;
             
+            const bothCardsActive = camDisabled && !clockDisabled && timerMode !== 'none';
+
             let svgPathD = `
                 M0 0 H1920 V1080 H0 Z
                 M46 24 H1538 A22 30 0 0 1 1560 46 V866 A22 22 0 0 1 1538 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
                 M1606 24 H1874 A22 30 0 0 1 1896 46 V314 A22 22 0 0 1 1874 336 H1606 A22 30 0 0 1 1584 314 V46 A22 30 0 0 1 1606 24 Z
             `;
 
-            if (camDisabled) {
+            if (camDisabled && !bothCardsActive) {
                 svgPathD = `
                     M0 0 H1920 V1080 H0 Z
                     M46 24 H1874 A22 30 0 0 1 1896 46 V866 A22 22 0 0 1 1874 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
@@ -372,7 +375,7 @@
                 }
             }
 
-            const gameWidth = camDisabled ? '1872px' : '1536px';
+            const gameWidth = (camDisabled && !bothCardsActive) ? '1872px' : '1536px';
 
             return `
                 <svg id="bg" width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;left:0;top:0;z-index:0;pointer-events:none;">
