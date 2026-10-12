@@ -206,7 +206,7 @@
                             <span>Your Cloudflare Worker URL</span>
                         </label>
                         <div class="relative">
-                            <input type="text" id="inputEndpoint" value="https://stream-layout.your-subdomain.workers.dev" oninput="updateWorkerUrl()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-xs text-cf-cyan font-mono focus:outline-none transition pl-10">
+                            <input type="text" id="inputEndpoint" value="https://custom-stream-layout.classicstudios-rbx.workers.dev/" oninput="updateWorkerUrl()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-xs text-cf-cyan font-mono focus:outline-none transition pl-10">
                             <i class="fa-solid fa-globe absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
                         </div>
                         <p class="text-[11px] text-slate-400 font-mono">This worker intercepts raw GitHub files and serves valid <code class="text-cf-orange">text/html</code> headers.</p>
@@ -343,9 +343,6 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="copyWorkerUrl()" class="py-2.5 px-3 bg-gradient-to-r from-cf-orange to-cf-darkorange hover:brightness-110 text-white font-bold font-orbitron rounded-xl text-xs transition shadow-[0_0_15px_rgba(243,128,32,0.3)] flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-copy"></i> COPY WORKER URL
-                        </button>
                         <button onclick="openLiveWindow()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold font-orbitron rounded-xl text-xs border border-slate-700 transition flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-arrow-up-right-from-square"></i> TEST FULLSCREEN
                         </button>
@@ -430,92 +427,6 @@
                             Live CSS Filter Engine Active
                         </span>
                         <span id="simMetaDisplay">Dynamic Hue Shift: 190°</span>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- ================= TAB 2: WORKER SCRIPT SETUP ================= -->
-        <div id="tab-worker" class="hidden space-y-6">
-            
-            <div class="cf-glass rounded-2xl p-6 border border-cf-border space-y-6">
-                
-                <div class="flex flex-wrap justify-between items-center gap-4 border-b border-cf-border pb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-cf-orange/20 border border-cf-orange text-cf-orange flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-code"></i>
-                        </div>
-                        <div>
-                            <h2 class="font-orbitron font-bold text-lg text-white">CLOUDFLARE WORKER DEPLOYMENT SCRIPT</h2>
-                            <p class="text-xs text-slate-400">Copy this JavaScript into your Cloudflare Worker to serve GitHub files as rendered HTML</p>
-                        </div>
-                    </div>
-
-                    <button onclick="copyWorkerScript()" class="px-5 py-2.5 rounded-xl text-xs font-bold font-orbitron bg-cf-orange hover:bg-cf-darkorange text-white transition flex items-center gap-2">
-                        <i class="fa-solid fa-copy"></i> COPY WORKER SCRIPT
-                    </button>
-                </div>
-
-                <!-- Code Viewport -->
-                <div class="relative">
-                    <pre class="bg-slate-950 p-5 rounded-2xl border border-slate-800 font-mono text-xs text-cf-cyan overflow-x-auto leading-relaxed select-all" id="workerScriptCode">export default {
-  async fetch(request, env, ctx) {
-    // 1. Raw GitHub repository URL of your HTML stream layout
-    const githubRawUrl = "https://raw.githubusercontent.com/johannes837/Stream-layout/refs/heads/main/index.html";
-    
-    try {
-      // 2. Fetch raw HTML from GitHub
-      const response = await fetch(githubRawUrl);
-      
-      if (!response.ok) {
-        return new Response("Failed to fetch stream layout from GitHub.", { status: 500 });
-      }
-
-      const htmlContent = await response.text();
-
-      // 3. Return response with proper text/html Content-Type header so OBS renders it
-      return new Response(htmlContent, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/html;charset=UTF-8",
-          "Cache-Control": "public, max-age=30",
-          "Access-Control-Allow-Origin": "*",
-          "X-Frame-Options": "ALLOWALL"
-        },
-      });
-    } catch (err) {
-      return new Response(`Worker Error: ${err.message}`, { status: 500 });
-    }
-  },
-};</pre>
-                </div>
-
-                <!-- Step-by-Step Wrangler & Dashboard Deployment Instructions -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-cf-border">
-                    <div class="space-y-3">
-                        <h3 class="font-orbitron text-xs font-bold text-cf-orange flex items-center gap-2">
-                            <i class="fa-solid fa-globe"></i> METHOD A: CLOUDFLARE DASHBOARD (EASIEST)
-                        </h3>
-                        <ol class="space-y-2 text-xs text-slate-300 list-decimal pl-4">
-                            <li>Log in to your <strong>Cloudflare Dashboard</strong> $\rightarrow$ Navigate to <strong>Workers & Pages</strong>.</li>
-                            <li>Click <strong>Create Application</strong> $\rightarrow$ Select <strong>Create Worker</strong>.</li>
-                            <li>Name your worker (e.g., <code class="text-cf-orange">stream-layout</code>) and click <strong>Deploy</strong>.</li>
-                            <li>Click <strong>Edit Code</strong>, paste the JavaScript code above, and click <strong>Save and Deploy</strong>.</li>
-                        </ol>
-                    </div>
-
-                    <div class="space-y-3">
-                        <h3 class="font-orbitron text-xs font-bold text-cf-cyan flex items-center gap-2">
-                            <i class="fa-solid fa-terminal"></i> METHOD B: WRANGLER CLI
-                        </h3>
-                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 space-y-1">
-                            <div class="text-slate-500"># Create new Wrangler worker project</div>
-                            <div>npm create cloudflare@latest stream-layout</div>
-                            <div class="text-slate-500 pt-1"># Deploy directly to Cloudflare</div>
-                            <div>npx wrangler deploy</div>
-                        </div>
                     </div>
                 </div>
 
