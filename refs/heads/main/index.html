@@ -1,552 +1,723 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloudflare OBS Link Generator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --cf-orange: #f38020;
-            --cf-amber: #faad14;
-            --bg-dark: #0b0f19;
-            --panel-bg: rgba(18, 24, 38, 0.85);
-            --panel-border: rgba(243, 128, 32, 0.2);
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --primary-glow: rgba(243, 128, 32, 0.35);
-            --hue-deg: 0deg;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(243, 128, 32, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(250, 173, 20, 0.05) 0%, transparent 40%);
-            overflow-x: hidden;
-        }
-
-        header {
-            background: rgba(11, 15, 25, 0.9);
-            border-bottom: 1px solid var(--panel-border);
-            padding: 1.25rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            backdrop-filter: blur(12px);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .logo-group {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            fill: var(--cf-orange);
-            filter: drop-shadow(0 0 8px var(--primary-glow));
-        }
-
-        .logo-title {
-            font-size: 1.25rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #ffffff 0%, var(--cf-orange) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .badge {
-            background: rgba(243, 128, 32, 0.15);
-            color: var(--cf-orange);
-            border: 1px solid rgba(243, 128, 32, 0.4);
-            padding: 0.25rem 0.6rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
-            display: grid;
-            grid-template-columns: 420px 1fr;
-            gap: 2rem;
-            flex: 1;
-            width: 100%;
-        }
-
-        @media (max-width: 1100px) {
-            .container {
-                grid-template-columns: 1fr;
+    <title>Cloudflare Worker & OBS Layout Command Center</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cf: {
+                            orange: '#F38020',
+                            darkorange: '#C85C00',
+                            bg: '#07090e',
+                            panel: '#0d111a',
+                            border: '#1e2638',
+                            cyan: '#00f0ff',
+                            pink: '#ff0055',
+                            purple: '#8a2be2',
+                            green: '#00ff66',
+                            amber: '#ffaa00'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
             }
         }
+    </script>
 
-        .card {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 16px;
-            padding: 1.75rem;
-            backdrop-filter: blur(16px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 1rem;
-        }
-
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #fff;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            display: flex;
-            justify-content: space-between;
-        }
-
-        input[type="text"], select {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-        }
-
-        input[type="text"]:focus, select:focus {
-            outline: none;
-            border-color: var(--cf-orange);
-            box-shadow: 0 0 0 3px rgba(243, 128, 32, 0.2);
-        }
-
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        input[type="range"] {
-            flex: 1;
-            accent-color: var(--cf-orange);
-            cursor: pointer;
-        }
-
-        .presets-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
-        }
-
-        .preset-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-main);
-            padding: 0.5rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-
-        .preset-btn:hover {
-            background: rgba(243, 128, 32, 0.2);
-            border-color: var(--cf-orange);
-            color: #fff;
-        }
-
-        .url-box {
-            background: #06080e;
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .url-output {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--cf-amber);
-            word-break: break-all;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 0.75rem;
-            border-radius: 6px;
-            border: 1px dashed rgba(250, 173, 20, 0.3);
-            max-height: 100px;
-            overflow-y: auto;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--cf-orange) 0%, #d96b12 100%);
-            color: #fff;
-            border: none;
-            padding: 0.85rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            box-shadow: 0 4px 14px var(--primary-glow);
-            transition: all 0.2s;
-        }
-
-        .btn-primary:hover {
-            opacity: 0.95;
-            transform: translateY(-1px);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        .preview-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .preview-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .viewport {
-            aspect-ratio: 16 / 9;
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    <style>
+        body {
+            background-color: #07090e;
+            color: #e2e8f0;
+            font-family: 'Rajdhani', sans-serif;
             background-image: 
-                linear-gradient(45deg, #151b28 25%, transparent 25%), 
-                linear-gradient(-45deg, #151b28 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #151b28 75%), 
-                linear-gradient(-45deg, transparent 75%, #151b28 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+                radial-gradient(circle at 10% 20%, rgba(243, 128, 32, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(138, 43, 226, 0.04) 0%, transparent 60%);
+            background-attachment: fixed;
         }
 
-        /* Mock Overlay Container inside Preview */
-        .overlay-mock {
-            width: 100%;
-            height: 100%;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+        .cf-glass {
+            background: rgba(13, 17, 26, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(243, 128, 32, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .cf-glass-glow {
+            background: rgba(13, 17, 26, 0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(243, 128, 32, 0.4);
+            box-shadow: 0 0 25px rgba(243, 128, 32, 0.2);
+        }
+
+        .glow-orange {
+            text-shadow: 0 0 12px rgba(243, 128, 32, 0.8);
+        }
+
+        .glow-cyan {
+            text-shadow: 0 0 12px rgba(0, 240, 255, 0.8);
+        }
+
+        .scanline-overlay {
             position: relative;
-            filter: hue-rotate(var(--hue-deg));
-            box-sizing: border-box;
+            overflow: hidden;
         }
-
-        .overlay-frame {
+        .scanline-overlay::before {
+            content: " ";
+            display: block;
             position: absolute;
-            inset: 12px;
-            border: 3px solid var(--cf-orange);
-            border-radius: 16px;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 10;
+            background-size: 100% 3px, 6px 100%;
             pointer-events: none;
-            box-shadow: 0 0 20px var(--primary-glow), inset 0 0 20px var(--primary-glow);
         }
 
-        .mock-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 2;
+        .grid-bg {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, rgba(243, 128, 32, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(243, 128, 32, 0.03) 1px, transparent 1px);
         }
 
-        .mock-title-card {
-            background: rgba(11, 15, 25, 0.85);
-            border: 1px solid var(--cf-orange);
-            padding: 0.75rem 1.25rem;
-            border-radius: 10px;
-            backdrop-filter: blur(8px);
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #07090e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e2638;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #F38020;
         }
 
-        .mock-stream-title {
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: #fff;
+        /* Custom Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 4px;
+            background: #F38020;
+            cursor: pointer;
+            box-shadow: 0 0 12px #F38020;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #1e2638;
+            border-radius: 3px;
         }
 
-        .mock-game-title {
-            font-size: 0.8rem;
-            color: var(--cf-orange);
-            font-weight: 600;
-        }
-
-        .mock-badge {
-            background: var(--cf-orange);
-            color: #000;
-            font-weight: 800;
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: #10b981;
-            color: #fff;
-            padding: 0.85rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            z-index: 1000;
-        }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
+        /* Tab transition styling */
+        .tab-btn.active {
+            border-color: #F38020;
+            color: #F38020;
+            background-color: rgba(243, 128, 32, 0.12);
+            box-shadow: 0 0 15px rgba(243, 128, 32, 0.2);
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col grid-bg relative overflow-x-hidden">
 
-    <header>
-        <div class="logo-group">
-            <svg class="logo-icon" viewBox="0 0 24 24">
-                <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
-            </svg>
-            <span class="logo-title">Cloudflare Worker OBS Generator</span>
+    <!-- App Navigation Header -->
+    <header class="border-b border-cf-border bg-cf-panel/90 backdrop-blur-md px-6 py-3.5 sticky top-0 z-50 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+            <div class="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-cf-orange/10 border border-cf-orange text-cf-orange shadow-[0_0_20px_rgba(243,128,32,0.3)]">
+                <i class="fa-solid fa-cloud text-xl animate-pulse"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-orbitron font-black text-lg tracking-wider text-white">CLOUDFLARE WORKER <span class="text-cf-orange font-mono text-xs px-2.5 py-0.5 rounded bg-cf-orange/20 border border-cf-orange/40 ml-1">OBS ENGINE</span></h1>
+                </div>
+                <p class="text-xs text-slate-400 font-mono flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-cf-green animate-ping"></span>
+                    High-Performance HTML Header Proxy & Generator
+                </p>
+            </div>
         </div>
-        <span class="badge">PROD // WORKER-ROUTER</span>
+
+        <!-- Navigation Tabs -->
+        <div class="flex items-center gap-2 bg-slate-950/80 p-1 rounded-2xl border border-cf-border">
+            <button onclick="switchTab('builder')" id="tabBtn-builder" class="tab-btn active px-4 py-2 rounded-xl text-xs font-bold font-orbitron text-slate-400 hover:text-white transition flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-cf-orange"></i> URL BUILDER
+            </button>
+            <button onclick="switchTab('worker')" id="tabBtn-worker" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold font-orbitron text-slate-400 hover:text-white transition flex items-center gap-2">
+                <i class="fa-solid fa-code text-cf-cyan"></i> WORKER SCRIPT
+            </button>
+            <button onclick="switchTab('guide')" id="tabBtn-guide" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold font-orbitron text-slate-400 hover:text-white transition flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-cf-green"></i> OBS GUIDE
+            </button>
+        </div>
+
+        <!-- Quick Deploy Button -->
+        <button onclick="copyWorkerUrl()" class="px-5 py-2.5 rounded-xl text-xs font-bold font-orbitron bg-gradient-to-r from-cf-orange via-cf-darkorange to-cf-purple text-white transition hover:scale-105 shadow-[0_0_20px_rgba(243,128,32,0.4)] flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-sm"></i> COPY WORKER URL
+        </button>
     </header>
 
-    <main class="container">
-        <!-- CONTROL PANEL -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                    Stream Configuration
-                </span>
-            </div>
+    <!-- Main Dashboard Body -->
+    <main class="flex-1 p-4 md:p-6 max-w-[1920px] mx-auto w-full">
 
-            <!-- Worker Domain -->
-            <div class="form-group">
-                <label for="workerDomain">Cloudflare Worker URL</label>
-                <input type="text" id="workerDomain" value="https://stream-layout.your-subdomain.workers.dev" placeholder="https://your-worker.workers.dev">
-            </div>
+        <!-- ================= TAB 1: BUILDER & PREVIEW ================= -->
+        <div id="tab-builder" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN: Configurator Dock -->
+            <div class="lg:col-span-4 xl:col-span-3 space-y-6">
+                
+                <!-- Cloudflare Worker Endpoint Base Config -->
+                <div class="cf-glass rounded-2xl p-5 border border-cf-border space-y-3">
+                    <div class="flex justify-between items-center border-b border-cf-border pb-2.5">
+                        <span class="font-orbitron text-xs font-bold tracking-wider text-cf-orange flex items-center gap-2">
+                            <i class="fa-solid fa-server"></i> WORKER ENDPOINT BASE
+                        </span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cf-green/10 text-cf-green border border-cf-green/30">HTTPS READY</span>
+                    </div>
 
-            <!-- Title -->
-            <div class="form-group">
-                <label for="streamTitle">Stream Title</label>
-                <input type="text" id="streamTitle" value="Chill Gaming & Vibe Session">
-            </div>
-
-            <!-- Game/Category -->
-            <div class="form-group">
-                <label for="gameCategory">Game / Category</label>
-                <input type="text" id="gameCategory" value="Valorant">
-            </div>
-
-            <!-- Status Tag -->
-            <div class="form-group">
-                <label for="statusTag">Status Banner</label>
-                <select id="statusTag">
-                    <option value="LIVE STREAM">LIVE STREAM</option>
-                    <option value="STARTING SOON">STARTING SOON</option>
-                    <option value="BE RIGHT BACK">BE RIGHT BACK</option>
-                    <option value="OFFLINE">OFFLINE</option>
-                </select>
-            </div>
-
-            <!-- Hue Slider -->
-            <div class="form-group">
-                <label for="hueSlider">
-                    <span>Color Theme (Hue Shift)</span>
-                    <span id="hueVal" style="color: var(--cf-orange);">0°</span>
-                </label>
-                <div class="slider-container">
-                    <input type="range" id="hueSlider" min="0" max="360" value="0">
-                </div>
-            </div>
-
-            <!-- Presets -->
-            <div class="form-group">
-                <label>Quick Presets</label>
-                <div class="presets-grid">
-                    <button class="preset-btn" onclick="applyPreset('gaming')">Gaming</button>
-                    <button class="preset-btn" onclick="applyPreset('chatting')">Chatting</button>
-                    <button class="preset-btn" onclick="applyPreset('brb')">BRB</button>
-                </div>
-            </div>
-
-            <!-- Generated URL Box -->
-            <div class="url-box">
-                <label>Final OBS Browser Source Link</label>
-                <div class="url-output" id="finalUrl">Generating URL...</div>
-                <button class="btn-primary" onclick="copyUrl()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    Copy OBS URL
-                </button>
-            </div>
-        </div>
-
-        <!-- PREVIEW PANEL -->
-        <div class="preview-wrapper">
-            <div class="card">
-                <div class="preview-header">
-                    <span class="card-title">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        Live 1080p Viewport Simulation
-                    </span>
-                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);">1920 x 1080</span>
-                </div>
-
-                <div class="viewport">
-                    <div class="overlay-mock" id="mockOverlay">
-                        <div class="overlay-frame"></div>
-                        <div class="mock-header">
-                            <div class="mock-title-card">
-                                <div class="mock-stream-title" id="mockTitle">Chill Gaming & Vibe Session</div>
-                                <div class="mock-game-title" id="mockGame">Valorant</div>
-                            </div>
-                            <div class="mock-badge" id="mockStatus">LIVE STREAM</div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-300 flex justify-between">
+                            <span>Your Cloudflare Worker URL</span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="inputEndpoint" value="https://stream-layout.your-subdomain.workers.dev" oninput="updateWorkerUrl()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-xs text-cf-cyan font-mono focus:outline-none transition pl-10">
+                            <i class="fa-solid fa-globe absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
                         </div>
+                        <p class="text-[11px] text-slate-400 font-mono">This worker intercepts raw GitHub files and serves valid <code class="text-cf-orange">text/html</code> headers.</p>
                     </div>
                 </div>
+
+                <!-- Preset Profiles -->
+                <div class="cf-glass rounded-2xl p-4 border border-cf-border">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-orbitron text-xs font-bold tracking-wider text-cf-orange flex items-center gap-2">
+                            <i class="fa-solid fa-bookmark"></i> PRESET TEMPLATES
+                        </span>
+                        <span class="text-[10px] text-slate-400 font-mono">1-CLICK CONFIG</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="applyPreset('cyber')" class="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cf-orange/50 text-xs font-bold text-slate-300 transition flex flex-col items-center gap-1 group">
+                            <i class="fa-solid fa-fire text-cf-orange group-hover:scale-110 transition"></i>
+                            <span>Cyber Red</span>
+                        </button>
+                        <button onclick="applyPreset('matrix')" class="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cf-green/50 text-xs font-bold text-slate-300 transition flex flex-col items-center gap-1 group">
+                            <i class="fa-solid fa-terminal text-cf-green group-hover:scale-110 transition"></i>
+                            <span>Matrix</span>
+                        </button>
+                        <button onclick="applyPreset('vaporwave')" class="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cf-pink/50 text-xs font-bold text-slate-300 transition flex flex-col items-center gap-1 group">
+                            <i class="fa-solid fa-compact-disc text-cf-pink group-hover:scale-110 transition"></i>
+                            <span>Vaporwave</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Parameters Form -->
+                <div class="cf-glass rounded-2xl p-5 border border-cf-border space-y-4">
+                    <div class="flex justify-between items-center border-b border-cf-border pb-3">
+                        <h2 class="font-orbitron text-xs font-bold tracking-wider text-white flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-cf-orange"></i> DYNAMIC PARAMETERS
+                        </h2>
+                        <button onclick="resetDefaults()" class="text-[11px] font-mono text-slate-400 hover:text-cf-orange transition flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+
+                    <!-- Stream Title -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-300 flex justify-between">
+                            <span>Stream Main Title</span>
+                            <span class="text-[10px] text-cf-orange font-mono">?title=</span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="inputTitle" value="VALORANT // RADIANT RANKED SPREE" oninput="updateWorkerUrl()" class="w-full bg-slate-950/80 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-sm text-white font-rajdhani font-semibold focus:outline-none transition pl-10">
+                            <i class="fa-solid fa-heading absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
+                        </div>
+                    </div>
+
+                    <!-- Game / Subtitle -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-300 flex justify-between">
+                            <span>Category / Game Name</span>
+                            <span class="text-[10px] text-cf-orange font-mono">?game=</span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="inputGame" value="VALORANT" oninput="updateWorkerUrl()" class="w-full bg-slate-950/80 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-sm text-white font-rajdhani font-semibold focus:outline-none transition pl-10">
+                            <i class="fa-solid fa-gamepad absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
+                        </div>
+                    </div>
+
+                    <!-- Status Badge -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-300 flex justify-between">
+                            <span>Status Badge Text</span>
+                            <span class="text-[10px] text-cf-orange font-mono">?status=</span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="inputStatus" value="LIVE STREAM" oninput="updateWorkerUrl()" class="w-full bg-slate-950/80 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2.5 text-sm text-white font-rajdhani font-semibold focus:outline-none transition pl-10">
+                            <i class="fa-solid fa-tag absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 pt-1">
+                            <button onclick="setStatus('LIVE NOW')" class="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-400 border border-slate-800 hover:text-white">LIVE NOW</button>
+                            <button onclick="setStatus('BRB')" class="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-400 border border-slate-800 hover:text-white">BRB</button>
+                            <button onclick="setStatus('STARTING SOON')" class="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-400 border border-slate-800 hover:text-white">STARTING</button>
+                            <button onclick="setStatus('OFFLINE')" class="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-slate-400 border border-slate-800 hover:text-white">OFFLINE</button>
+                        </div>
+                    </div>
+
+                    <!-- Hue Engine -->
+                    <div class="space-y-2 pt-2 border-t border-cf-border">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-bold uppercase text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-palette text-cf-orange"></i> Hue Color Engine
+                            </label>
+                            <span id="hueDegDisplay" class="font-mono text-xs font-bold text-cf-orange px-2 py-0.5 rounded bg-cf-orange/10 border border-cf-orange/30">190°</span>
+                        </div>
+                        
+                        <input type="range" id="inputHue" min="0" max="360" value="190" oninput="updateWorkerUrl()" class="w-full">
+
+                        <!-- Palette Swatches -->
+                        <div class="grid grid-cols-6 gap-1 pt-1">
+                            <button onclick="setHue(10)" title="Cyber Red" class="h-6 rounded bg-[hsl(10,100%,50%)] hover:scale-105 transition border border-white/20 text-[9px] font-black text-white">Red</button>
+                            <button onclick="setHue(190)" title="Neon Cyan" class="h-6 rounded bg-[hsl(190,100%,50%)] hover:scale-105 transition border border-white/20 text-[9px] font-black text-black">Cyan</button>
+                            <button onclick="setHue(120)" title="Matrix Green" class="h-6 rounded bg-[hsl(120,100%,50%)] hover:scale-105 transition border border-white/20 text-[9px] font-black text-black">Green</button>
+                            <button onclick="setHue(320)" title="Vaporwave Pink" class="h-6 rounded bg-[hsl(320,100%,60%)] hover:scale-105 transition border border-white/20 text-[9px] font-black text-white">Pink</button>
+                            <button onclick="setHue(35)" title="Solar Amber" class="h-6 rounded bg-[hsl(35,100%,50%)] hover:scale-105 transition border border-white/20 text-[9px] font-black text-black">Amber</button>
+                            <button onclick="setHue(270)" title="Ultra Violet" class="h-6 rounded bg-[hsl(270,100%,60%)] hover:scale-105 transition border border-white/20 text-[9px] font-black text-white">Purp</button>
+                        </div>
+                    </div>
+
+                    <!-- Widget Toggles -->
+                    <div class="space-y-2.5 pt-3 border-t border-cf-border">
+                        <label class="flex items-center justify-between cursor-pointer p-2 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-slate-700 transition">
+                            <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-clock text-xs text-cf-orange"></i> Live Uptime Counter Widget
+                            </span>
+                            <input type="checkbox" id="inputUptime" checked onchange="updateWorkerUrl()" class="w-4 h-4 rounded text-cf-orange bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer">
+                        </label>
+
+                        <label class="flex items-center justify-between cursor-pointer p-2 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-slate-700 transition">
+                            <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-square-full text-xs text-cf-orange"></i> Frame Dark Backdrop
+                            </span>
+                            <input type="checkbox" id="inputBg" checked onchange="updateWorkerUrl()" class="w-4 h-4 rounded text-cf-orange bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Final Cloudflare Worker URL Copy Area -->
+                <div class="cf-glass rounded-2xl p-5 border border-cf-border space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-orbitron text-xs font-bold tracking-wider text-cf-orange flex items-center gap-2">
+                            <i class="fa-solid fa-link"></i> FINAL OBS BROWSER SOURCE URL
+                        </span>
+                    </div>
+                    
+                    <div class="relative">
+                        <textarea id="outputWorkerUrl" readonly rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-cf-cyan focus:outline-none resize-none select-all break-all leading-relaxed"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="copyWorkerUrl()" class="py-2.5 px-3 bg-gradient-to-r from-cf-orange to-cf-darkorange hover:brightness-110 text-white font-bold font-orbitron rounded-xl text-xs transition shadow-[0_0_15px_rgba(243,128,32,0.3)] flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-copy"></i> COPY WORKER URL
+                        </button>
+                        <button onclick="openLiveWindow()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold font-orbitron rounded-xl text-xs border border-slate-700 transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> TEST FULLSCREEN
+                        </button>
+                    </div>
+                </div>
+
             </div>
+
+            <!-- RIGHT COLUMN: Real-Time Live Preview Canvas -->
+            <div class="lg:col-span-8 xl:col-span-9 space-y-6 flex flex-col">
+                
+                <div class="cf-glass rounded-2xl p-5 border border-cf-border space-y-4 flex-1 flex flex-col min-h-[550px]">
+                    
+                    <!-- Viewport Top Control Bar -->
+                    <div class="flex flex-wrap justify-between items-center gap-3 border-b border-cf-border pb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="font-orbitron text-xs font-bold tracking-wider text-white flex items-center gap-2">
+                                <i class="fa-solid fa-display text-cf-orange"></i> OBS 1080P SIMULATED CANVAS
+                            </span>
+                            <span class="text-[10px] font-mono text-slate-400 px-2.5 py-0.5 rounded bg-slate-950 border border-slate-800">1920x1080 Aspect Ratio</span>
+                        </div>
+
+                        <!-- Backdrop Simulator Selector -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 font-mono hidden sm:inline">PREVIEW GAME SCENE:</span>
+                            <select id="bgSimSelect" onchange="changeBgSim()" class="bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-300 px-3 py-1.5 focus:outline-none focus:border-cf-orange">
+                                <option value="valorant">Valorant Arena</option>
+                                <option value="cyberpunk">Cyberpunk Night City</option>
+                                <option value="chatting">Just Chatting Setup</option>
+                                <option value="rocket">Rocket League Arena</option>
+                                <option value="darkgrid">Dark Cyber Grid</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Scaled Canvas Viewport -->
+                    <div id="canvasViewport" class="relative w-full flex-1 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center scanline-overlay min-h-[420px]">
+                        
+                        <!-- Simulated Backdrop Image -->
+                        <div id="simBackdrop" class="absolute inset-0 bg-cover bg-center transition-all duration-500 opacity-50" style="background-image: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop');">
+                        </div>
+
+                        <!-- Live Visual Overlay Simulation Container (CSS Transformation Based) -->
+                        <div id="overlaySimulation" class="absolute inset-0 flex flex-col justify-between p-12 pointer-events-none transition-all duration-300">
+                            
+                            <!-- Top Bar Overlay Frame -->
+                            <div class="flex justify-between items-start">
+                                <!-- Status Badge & Title Banner -->
+                                <div class="flex items-center gap-4 bg-slate-950/90 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl transition-all duration-300" id="simTitleBox">
+                                    <span id="simStatus" class="px-3 py-1 rounded-xl bg-cf-orange text-black font-orbitron font-black text-xs uppercase tracking-wider animate-pulse">
+                                        LIVE STREAM
+                                    </span>
+                                    <div>
+                                        <div id="simTitle" class="font-orbitron font-black text-xl text-white tracking-wide">VALORANT // RADIANT RANKED SPREE</div>
+                                        <div id="simGame" class="font-rajdhani font-bold text-sm text-cf-cyan flex items-center gap-1.5">
+                                            <i class="fa-solid fa-gamepad"></i> VALORANT
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Live Timer Badge -->
+                                <div id="simTimerBox" class="bg-slate-950/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 flex items-center gap-3 font-mono text-sm text-white shadow-2xl">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-cf-green animate-ping"></span>
+                                    <span id="simTimer">01:42:19</span>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Decorative Neon Cyber Frame Strip -->
+                            <div id="simBottomBar" class="w-full h-2 rounded-full bg-gradient-to-r from-cf-orange via-cf-cyan to-cf-purple shadow-[0_0_20px_rgba(243,128,32,0.8)] transition-all duration-300">
+                            </div>
+
+                        </div>
+
+                        <!-- Active Transformation Filter Overlay -->
+                        <div id="hueFilterLayer" class="absolute inset-0 pointer-events-none mix-blend-hue opacity-50 transition-all duration-300"></div>
+                    </div>
+
+                    <!-- Canvas Meta Indicator -->
+                    <div class="flex justify-between items-center text-[11px] font-mono text-slate-400 px-1">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-cf-orange animate-pulse"></span>
+                            Live CSS Filter Engine Active
+                        </span>
+                        <span id="simMetaDisplay">Dynamic Hue Shift: 190°</span>
+                    </div>
+                </div>
+
+            </div>
+
         </div>
+
+        <!-- ================= TAB 2: WORKER SCRIPT SETUP ================= -->
+        <div id="tab-worker" class="hidden space-y-6">
+            
+            <div class="cf-glass rounded-2xl p-6 border border-cf-border space-y-6">
+                
+                <div class="flex flex-wrap justify-between items-center gap-4 border-b border-cf-border pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-cf-orange/20 border border-cf-orange text-cf-orange flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-code"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-orbitron font-bold text-lg text-white">CLOUDFLARE WORKER DEPLOYMENT SCRIPT</h2>
+                            <p class="text-xs text-slate-400">Copy this JavaScript into your Cloudflare Worker to serve GitHub files as rendered HTML</p>
+                        </div>
+                    </div>
+
+                    <button onclick="copyWorkerScript()" class="px-5 py-2.5 rounded-xl text-xs font-bold font-orbitron bg-cf-orange hover:bg-cf-darkorange text-white transition flex items-center gap-2">
+                        <i class="fa-solid fa-copy"></i> COPY WORKER SCRIPT
+                    </button>
+                </div>
+
+                <!-- Code Viewport -->
+                <div class="relative">
+                    <pre class="bg-slate-950 p-5 rounded-2xl border border-slate-800 font-mono text-xs text-cf-cyan overflow-x-auto leading-relaxed select-all" id="workerScriptCode">export default {
+  async fetch(request, env, ctx) {
+    // 1. Raw GitHub repository URL of your HTML stream layout
+    const githubRawUrl = "https://raw.githubusercontent.com/johannes837/Stream-layout/refs/heads/main/index.html";
+    
+    try {
+      // 2. Fetch raw HTML from GitHub
+      const response = await fetch(githubRawUrl);
+      
+      if (!response.ok) {
+        return new Response("Failed to fetch stream layout from GitHub.", { status: 500 });
+      }
+
+      const htmlContent = await response.text();
+
+      // 3. Return response with proper text/html Content-Type header so OBS renders it
+      return new Response(htmlContent, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html;charset=UTF-8",
+          "Cache-Control": "public, max-age=30",
+          "Access-Control-Allow-Origin": "*",
+          "X-Frame-Options": "ALLOWALL"
+        },
+      });
+    } catch (err) {
+      return new Response(`Worker Error: ${err.message}`, { status: 500 });
+    }
+  },
+};</pre>
+                </div>
+
+        <!-- ================= TAB 3: OBS INTEGRATION GUIDE ================= -->
+        <div id="tab-guide" class="hidden space-y-6">
+            
+            <div class="cf-glass rounded-2xl p-6 border border-cf-border space-y-6">
+                
+                <div class="flex items-center gap-3 border-b border-cf-border pb-4">
+                    <div class="w-10 h-10 rounded-xl bg-cf-green/20 border border-cf-green text-cf-green flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-video"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-orbitron font-bold text-lg text-white">OBS STUDIO STEP-BY-STEP SETUP GUIDE</h2>
+                        <p class="text-xs text-slate-400">How to embed your Cloudflare Worker URL cleanly into OBS Studio</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="flex gap-4 p-4 rounded-2xl bg-slate-950/80 border border-slate-800 items-start">
+                        <span class="w-8 h-8 rounded-xl bg-cf-orange text-white font-orbitron font-black flex items-center justify-center text-sm flex-none">1</span>
+                        <div>
+                            <h4 class="font-bold text-white mb-1">Add Browser Source</h4>
+                            <p class="text-xs text-slate-400">Open OBS Studio $\rightarrow$ Click <strong>+</strong> in the <em>Sources</em> dock $\rightarrow$ Select <strong>Browser</strong> $\rightarrow$ Name it "Cloudflare Overlay".</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 p-4 rounded-2xl bg-slate-950/80 border border-slate-800 items-start">
+                        <span class="w-8 h-8 rounded-xl bg-cf-cyan text-black font-orbitron font-black flex items-center justify-center text-sm flex-none">2</span>
+                        <div>
+                            <h4 class="font-bold text-white mb-1">Set Resolution</h4>
+                            <p class="text-xs text-slate-400">Set <strong>Width: 1920</strong> and <strong>Height: 1080</strong>. Make sure <strong>"Local file"</strong> remains unchecked.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 p-4 rounded-2xl bg-slate-950/80 border border-slate-800 items-start">
+                        <span class="w-8 h-8 rounded-xl bg-cf-purple text-white font-orbitron font-black flex items-center justify-center text-sm flex-none">3</span>
+                        <div>
+                            <h4 class="font-bold text-white mb-1">Paste Worker URL</h4>
+                            <p class="text-xs text-slate-400">Copy the URL from the <strong>URL Builder</strong> tab in this app and paste it directly into the <strong>URL</strong> field in OBS.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 p-4 rounded-2xl bg-slate-950/80 border border-slate-800 items-start">
+                        <span class="w-8 h-8 rounded-xl bg-cf-green text-black font-orbitron font-black flex items-center justify-center text-sm flex-none">4</span>
+                        <div>
+                            <h4 class="font-bold text-white mb-1">Position on Top</h4>
+                            <p class="text-xs text-slate-400">Ensure the Browser Source is placed at the top of your OBS layer list so it overlays over game capture.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
     </main>
 
-    <!-- TOAST NOTIFICATION -->
-    <div class="toast" id="toast">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <span>Link copied to clipboard! Paste in OBS Browser Source.</span>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-cf-panel border border-cf-orange text-white px-5 py-3.5 rounded-2xl shadow-[0_0_25px_rgba(243,128,32,0.4)] flex items-center gap-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-4">
+        <i class="fa-solid fa-circle-check text-cf-orange text-xl"></i>
+        <div>
+            <div id="toastTitle" class="font-orbitron font-bold text-xs text-white">SUCCESS</div>
+            <div id="toastMsg" class="text-xs text-slate-300 font-mono">Worker URL copied to clipboard!</div>
+        </div>
     </div>
 
+    <!-- Application JavaScript Logic -->
     <script>
-        const workerDomain = document.getElementById('workerDomain');
-        const streamTitle = document.getElementById('streamTitle');
-        const gameCategory = document.getElementById('gameCategory');
-        const statusTag = document.getElementById('statusTag');
-        const hueSlider = document.getElementById('hueSlider');
-        const hueVal = document.getElementById('hueVal');
-        const finalUrl = document.getElementById('finalUrl');
-
-        const mockTitle = document.getElementById('mockTitle');
-        const mockGame = document.getElementById('mockGame');
-        const mockStatus = document.getElementById('mockStatus');
-        const mockOverlay = document.getElementById('mockOverlay');
-        const toast = document.getElementById('toast');
-
-        function updateGenerator() {
-            const baseUrl = workerDomain.value.trim() || 'https://stream-layout.your-subdomain.workers.dev';
-            const title = encodeURIComponent(streamTitle.value.trim());
-            const game = encodeURIComponent(gameCategory.value.trim());
-            const status = encodeURIComponent(statusTag.value);
-            const hue = hueSlider.value;
-
-            hueVal.textContent = `${hue}°`;
-
-            // Build query params
-            const generated = `${baseUrl}/?title=${title}&game=${game}&status=${status}&hue=${hue}`;
-            finalUrl.textContent = generated;
-
-            // Update Mock Preview
-            mockTitle.textContent = streamTitle.value.trim() || 'Untitled Stream';
-            mockGame.textContent = gameCategory.value.trim() || 'General';
-            mockStatus.textContent = statusTag.value;
-            mockOverlay.style.setProperty('--hue-deg', `${hue}deg`);
-        }
-
-        function applyPreset(type) {
-            if (type === 'gaming') {
-                streamTitle.value = 'Ranked Grind to Radiant';
-                gameCategory.value = 'Valorant';
-                statusTag.value = 'LIVE STREAM';
-                hueSlider.value = 0;
-            } else if (type === 'chatting') {
-                streamTitle.value = 'Q&A, Memes & Chill Chatting';
-                gameCategory.value = 'Just Chatting';
-                statusTag.value = 'LIVE STREAM';
-                hueSlider.value = 210;
-            } else if (type === 'brb') {
-                streamTitle.value = 'Grabing Snacks & Water';
-                gameCategory.value = 'Be Right Back';
-                statusTag.value = 'BE RIGHT BACK';
-                hueSlider.value = 280;
-            }
-            updateGenerator();
-        }
-
-        function copyUrl() {
-            navigator.clipboard.writeText(finalUrl.textContent).then(() => {
-                toast.classList.add('show');
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 3000);
+        // Tab Switcher Logic
+        function switchTab(tabName) {
+            ['builder', 'worker', 'guide'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`tabBtn-${t}`).classList.remove('active');
             });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tabBtn-${tabName}`).classList.add('active');
         }
 
-        // Event Listeners
-        [workerDomain, streamTitle, gameCategory, statusTag, hueSlider].forEach(input => {
-            input.addEventListener('input', updateGenerator);
-            input.addEventListener('change', updateGenerator);
-        });
+        // Live Dynamic URL Generator & Preview Updater
+        function updateWorkerUrl() {
+            const endpoint = document.getElementById('inputEndpoint').value.trim();
+            const title = document.getElementById('inputTitle').value;
+            const game = document.getElementById('inputGame').value;
+            const status = document.getElementById('inputStatus').value;
+            const hue = document.getElementById('inputHue').value;
+            const uptime = document.getElementById('inputUptime').checked;
+            const bg = document.getElementById('inputBg').checked;
 
-        // Initialize
-        updateGenerator();
+            document.getElementById('hueDegDisplay').textContent = `${hue}°`;
+
+            // Build Params
+            const params = new URLSearchParams();
+            if (title) params.set('title', title);
+            if (game) params.set('game', game);
+            if (status) params.set('status', status);
+            if (hue !== '190') params.set('hue', hue);
+            if (!uptime) params.set('uptime', '0');
+            if (!bg) params.set('bg', '0');
+
+            const queryString = params.toString();
+            const finalUrl = endpoint + (queryString ? '?' + queryString : '');
+
+            document.getElementById('outputWorkerUrl').value = finalUrl;
+
+            // Update Simulation Canvas
+            document.getElementById('simTitle').textContent = title || 'LIVE STREAM';
+            document.getElementById('simGame').innerHTML = `<i class="fa-solid fa-gamepad"></i> ${game || 'STREAMING'}`;
+            document.getElementById('simStatus').textContent = status || 'LIVE';
+            document.getElementById('hueFilterLayer').style.filter = `hue-rotate(${hue}deg)`;
+            document.getElementById('simMetaDisplay').textContent = `Dynamic Hue Shift: ${hue}°`;
+
+            if (!uptime) {
+                document.getElementById('simTimerBox').style.display = 'none';
+            } else {
+                document.getElementById('simTimerBox').style.display = 'flex';
+            }
+        }
+
+        function setHue(val) {
+            document.getElementById('inputHue').value = val;
+            updateWorkerUrl();
+        }
+
+        function setStatus(val) {
+            document.getElementById('inputStatus').value = val;
+            updateWorkerUrl();
+        }
+
+        function applyPreset(preset) {
+            if (preset === 'cyber') {
+                document.getElementById('inputTitle').value = "CYBERPUNK 2077 // NIGHT CITY RUN";
+                document.getElementById('inputGame').value = "Cyberpunk 2077";
+                document.getElementById('inputStatus').value = "LIVE NOW";
+                setHue(10);
+            } else if (preset === 'matrix') {
+                document.getElementById('inputTitle').value = "CODE & DEVS // MATRIX SYSTEM";
+                document.getElementById('inputGame').value = "Software Engineering";
+                document.getElementById('inputStatus').value = "CODING";
+                setHue(120);
+            } else if (preset === 'vaporwave') {
+                document.getElementById('inputTitle').value = "RETRO VIBES & CHILL MUSIC";
+                document.getElementById('inputGame').value = "Just Chatting";
+                document.getElementById('inputStatus').value = "CHILLING";
+                setHue(320);
+            }
+            showToast("PRESET LOADED", `Loaded ${preset.toUpperCase()} configuration.`);
+        }
+
+        function resetDefaults() {
+            document.getElementById('inputTitle').value = "VALORANT // RADIANT RANKED SPREE";
+            document.getElementById('inputGame').value = "VALORANT";
+            document.getElementById('inputStatus').value = "LIVE STREAM";
+            document.getElementById('inputHue').value = 190;
+            document.getElementById('inputUptime').checked = true;
+            document.getElementById('inputBg').checked = true;
+            updateWorkerUrl();
+        }
+
+        function changeBgSim() {
+            const val = document.getElementById('bgSimSelect').value;
+            const sim = document.getElementById('simBackdrop');
+            
+            const bgMap = {
+                valorant: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop",
+                cyberpunk: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1920&auto=format&fit=crop",
+                chatting: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920&auto=format&fit=crop",
+                rocket: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1920&auto=format&fit=crop",
+                darkgrid: ""
+            };
+
+            if (val === 'darkgrid') {
+                sim.style.backgroundImage = 'linear-gradient(to right, #F38020 1px, transparent 1px), linear-gradient(to bottom, #F38020 1px, transparent 1px)';
+                sim.style.backgroundSize = '40px 40px';
+                sim.style.opacity = '0.15';
+            } else {
+                sim.style.backgroundImage = `url('${bgMap[val]}')`;
+                sim.style.opacity = '0.5';
+            }
+        }
+
+        function copyWorkerUrl() {
+            const input = document.getElementById('outputWorkerUrl');
+            input.select();
+            document.execCommand('copy');
+            showToast("WORKER URL COPIED", "Paste into OBS Browser Source properties.");
+        }
+
+        function copyWorkerScript() {
+            const script = document.getElementById('workerScriptCode').textContent;
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = script;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            showToast("SCRIPT COPIED", "Cloudflare Worker code copied to clipboard.");
+        }
+
+        function openLiveWindow() {
+            const url = document.getElementById('outputWorkerUrl').value;
+            window.open(url, '_blank');
+        }
+
+        function showToast(title, msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMsg').textContent = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            }, 3000);
+        }
+
+        // Live Timer Counter Loop for Simulation
+        let timerSeconds = 6139;
+        setInterval(() => {
+            timerSeconds++;
+            const hrs = String(Math.floor(timerSeconds / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((timerSeconds % 3600) / 60)).padStart(2, '0');
+            const secs = String(timerSeconds % 60).padStart(2, '0');
+            document.getElementById('simTimer').textContent = `${hrs}:${mins}:${secs}`;
+        }, 1000);
+
+        // Initialize on page load
+        window.addEventListener('load', updateWorkerUrl);
     </script>
 </body>
 </html>
