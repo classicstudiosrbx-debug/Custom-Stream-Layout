@@ -124,10 +124,11 @@
         let tickerInterval = null;
 
         // Build valid URL query parameters using ? and &
-        function getObsUrl() {
+       function getObsUrl() {
             const baseUrl = window.location.href.split('?')[0];
             const params = new URLSearchParams();
             
+            params.set('view', '1'); // <--- Added so OBS loads the clean overlay mode
             params.set('hue', state.hue);
             params.set('title', state.gameTitle);
             params.set('game', state.gameSubtitle);
@@ -137,7 +138,7 @@
             params.set('timer', state.timerMode);
             params.set('cdmins', state.cdMins);
 
-            return baseUrl + 'view?' + params.toString();
+            return baseUrl + '?' + params.toString();
         }
 
         function render() {
