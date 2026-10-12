@@ -16,7 +16,7 @@
     --card: rgba(10, 8, 22, .86);
   }
 
-  html, body { margin: 0; width: 1920px; height: 1080px; background: transparent; overflow: hidden; position: relative; }
+  html, body { margin: 0; width: 1920px; height: 1080px; background: transparent; overflow: hidden; }
   * { box-sizing: border-box; }
 
   /* ---------- rotating gradient frames (game + cam), see-through inside ---------- */
@@ -37,7 +37,7 @@
   @keyframes spin { to { --a: 360deg; } }
 
   #game { left: 22px; top: 22px; width: 1536px; height: 864px; transition: width 0.3s ease; }
-  #cam  { left: 1584px; top: 30px; width: 312px;  height: 312px; transition: all 0.3s ease; }
+  #cam  { left: 1584px; top: 30px; width: 312px;  height: 312px; transition: opacity 0.3s ease; }
 
   /* little corner brackets on the game frame */
   .corner { position: absolute; width: 34px; height: 34px; border: 3px solid #fff;
@@ -136,8 +136,8 @@
 
 <body translate="no">
 
-  <!-- solid black backdrop with see-through holes, locked at 0,0 -->
-  <svg id="bg" width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;left:0;top:0;z-index:0;pointer-events:none;">
+  <!-- solid black backdrop with see-through holes -->
+  <svg id="bg" width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;left:0;top:0">
     <path id="bg-path" fill="#000" fill-rule="evenodd" d="
       M0 0 H1920 V1080 H0 Z
       M46 24 H1538 A22 30 0 0 1 1560 46 V866 A22 22 0 0 1 1538 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
@@ -225,14 +225,15 @@ if (clockDisabled) {
 if (camDisabled) {
   camEl.style.display = 'none';
   
-  // Game window fills full width above bottom strip
+  // Game window fills full width above the bottom strip
   bgPath.setAttribute('d', `
     M0 0 H1920 V1080 H0 Z
     M46 24 H1874 A22 30 0 0 1 1896 46 V866 A22 22 0 0 1 1874 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
   `);
 
+  // Handle right-hand side stacking when cam is off
   if (!clockDisabled && timerMode !== 'none') {
-    // Both active: stack vertically on the right
+    // Both active: share the column vertically
     clockEl.style.top = '30px';
     clockEl.style.height = '420px';
     timerEl.style.top = '468px';
@@ -242,7 +243,7 @@ if (camDisabled) {
     clockEl.style.top = '30px';
     clockEl.style.height = '858px';
   } else if (clockDisabled && timerMode !== 'none') {
-    // Only timer active: move to bottom right correctly
+    // Only timer active: MOVE TO BOTTOM RIGHT as requested
     timerEl.style.top = '636px';
     timerEl.style.height = '252px';
   }
