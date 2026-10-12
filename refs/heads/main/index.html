@@ -148,8 +148,6 @@
                 initLiveTickers();
             } else {
                 const gameW = state.showFacecam ? 1536 : 1872;
-                const camW = 312;
-                const camH = 312;
 
                 app.innerHTML = `
                     <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
@@ -183,31 +181,22 @@
                                     </button>
                                 </h2>
                                 <input type="text" id="obs-url-input" readonly value="${getObsUrl()}" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-300 select-all focus:outline-none">
-                                <p class="text-[11px] text-slate-400 mt-2">Copy and paste this URL directly into your OBS Browser Source settings (1920x1080).</p>
+                                <p class="text-[11px] text-slate-400 mt-2">Copy and paste this URL directly into your OBS Browser Source settings.</p>
                             </div>
 
-                            <!-- OBS Source Transforms (Pixels) -->
+                            <!-- Setup Guide with Exact Pixels -->
                             <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
                                 <h2 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center space-x-2">
-                                    <i class="fa-solid fa-ruler-combined"></i><span>OBS Source Transforms (Pixels)</span>
+                                    <i class="fa-solid fa-circle-question"></i><span>OBS Source Transform Guide</span>
                                 </h2>
-                                <p class="text-[11px] text-slate-400">Use these exact pixel dimensions inside OBS when placing your game capture and facecam sources behind the overlay:</p>
-                                <div class="space-y-2 text-xs font-mono">
-                                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex justify-between items-center">
-                                        <span class="text-slate-300"><i class="fa-solid fa-gamepad text-purple-400 mr-1.5"></i> Game / Display Capture</span>
-                                        <span class="text-purple-300">X: 22px | Y: 22px<br>W: ${gameW}px | H: 864px</span>
-                                    </div>
+                                <ol class="text-xs text-slate-300 space-y-2.5 list-decimal pl-4">
+                                    <li>Click <b>Copy URL</b> at the top.</li>
+                                    <li>Add a <b>Browser Source</b> in OBS: <code class="text-purple-400">1920x1080</code> (X: <code class="text-purple-400">0</code>, Y: <code class="text-purple-400">0</code>). Place this source <b>on top</b> of everything.</li>
+                                    <li>Add your <b>Game / Display Capture</b> behind the overlay: Width <code class="text-purple-400">${gameW}px</code>, Height <code class="text-purple-400">864px</code> (X: <code class="text-purple-400">22</code>, Y: <code class="text-purple-400">22</code>).</li>
                                     ${state.showFacecam ? `
-                                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex justify-between items-center">
-                                        <span class="text-slate-300"><i class="fa-solid fa-video text-pink-400 mr-1.5"></i> Facecam Source</span>
-                                        <span class="text-pink-300">X: 1584px | Y: 30px<br>W: ${camW}px \vert{} H:${camH}px</span>
-                                    </div>
-                                    ` : `
-                                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 text-slate-500 italic text-center">
-                                        Facecam frame is currently disabled.
-                                    </div>
-                                    `}
-                                </div>
+                                    <li>Add your <b>Facecam Source</b> behind the top-right frame: Width <code class="text-purple-400">312px</code>, Height <code class="text-purple-400">312px</code> (X: <code class="text-purple-400">1584</code>, Y: <code class="text-purple-400">30</code>).</li>
+                                    ` : ''}
+                                </ol>
                             </div>
 
                             <!-- Stream Info -->
