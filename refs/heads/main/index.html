@@ -56,7 +56,7 @@
             padding: 0;
         }
 
-        /* Full 1920x1080 Viewport Mode */
+        /* Full 1920x1080 Viewport Mode for OBS */
         body.viewer-mode {
             width: 1920px;
             height: 1080px;
@@ -123,6 +123,7 @@
             position: absolute; border-radius: 20px; overflow: hidden; z-index: 1;
             box-shadow: 0 0 30px color-mix(in srgb, var(--c1) 50%, transparent),
                         0 0 60px color-mix(in srgb, var(--c2) 28%, transparent);
+            transition: all 0.3s ease;
         }
         .frame::before {
             content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 4px;
@@ -241,7 +242,7 @@
 
                     <div class="space-y-1">
                         <label class="text-xs font-bold text-slate-300">Stream Title</label>
-                        <input type="text" id="inputTitle" value="ROBLOX // CHILLING" oninput="updateLayout()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2 text-xs text-white font-rajdhani focus:outline-none">
+                        <input type="text" id="inputTitle" value="ROBLOX // BUILDING A BOAT" oninput="updateLayout()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2 text-xs text-white font-rajdhani focus:outline-none">
                     </div>
 
                     <div class="space-y-1">
@@ -269,7 +270,7 @@
                         </label>
 
                         <div class="space-y-1 pt-1">
-                            <label class="text-xs font-bold text-slate-300">Timer Mode (Choose 1)</label>
+                            <label class="text-xs font-bold text-slate-300">Timer Mode (?timer=)</label>
                             <select id="selectTimerMode" onchange="updateLayout()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2 text-xs text-white font-rajdhani focus:outline-none">
                                 <option value="uptime">Countup Uptime Timer</option>
                                 <option value="countdown">Countdown Timer</option>
@@ -278,7 +279,7 @@
                         </div>
 
                         <div id="countdownMinutesGroup" class="space-y-1 pt-1 hidden">
-                            <label class="text-xs font-bold text-slate-300">Countdown Duration (Minutes)</label>
+                            <label class="text-xs font-bold text-slate-300">Countdown Duration (?cdmins=)</label>
                             <input type="number" id="inputCountdownMins" value="15" min="1" max="1440" oninput="updateLayout()" class="w-full bg-slate-950 border border-slate-800 focus:border-cf-orange rounded-xl px-3.5 py-2 text-xs text-white font-rajdhani focus:outline-none">
                         </div>
 
@@ -408,7 +409,7 @@
     </div>
 
     <script>
-        // Parse Query Parameters
+        // Parse Query Parameters safely
         var q = {};
         location.search.substring(1).split('&').forEach(function (p) {
             if (!p) return;
@@ -416,14 +417,13 @@
             q[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' '));
         });
 
-        // Check if viewing in OBS / Direct Viewer mode
+        // Determine Mode: OBS Viewer vs Interactive Generator
         if (q.view === '1' || window.location.pathname.includes('/view')) {
             document.getElementById('generatorApp').style.display = 'none';
             document.getElementById('viewerApp').style.display = 'block';
             document.body.classList.add('viewer-mode');
             initViewer();
         } else {
-            // Initialize Generator UI
             window.addEventListener('DOMContentLoaded', updateLayout);
         }
 
@@ -469,23 +469,19 @@
                 prevCamFrame.style.display = 'none';
 
                 if (!showClock && timerMode === 'none') {
-                    // Neither clock nor timer
                     prevClockCard.style.display = 'none';
                     prevTimerCard.style.display = 'none';
                 } else if (showClock && timerMode === 'none') {
-                    // Only clock
                     prevClockCard.style.display = 'flex';
                     prevClockCard.style.top = '3%';
                     prevClockCard.style.height = '87%';
                     prevTimerCard.style.display = 'none';
                 } else if (!showClock && timerMode !== 'none') {
-                    // Only timer
                     prevClockCard.style.display = 'none';
                     prevTimerCard.style.display = 'flex';
                     prevTimerCard.style.top = '3%';
                     prevTimerCard.style.height = '87%';
                 } else {
-                    // Both clock and timer
                     prevClockCard.style.display = 'flex';
                     prevClockCard.style.top = '3%';
                     prevClockCard.style.height = '43%';
@@ -498,23 +494,19 @@
                 prevCamFrame.style.display = 'block';
 
                 if (!showClock && timerMode === 'none') {
-                    // Only cam
                     prevClockCard.style.display = 'none';
                     prevTimerCard.style.display = 'none';
                 } else if (showClock && timerMode === 'none') {
-                    // Cam + Clock
                     prevClockCard.style.display = 'flex';
                     prevClockCard.style.top = '35%';
                     prevClockCard.style.height = '54%';
                     prevTimerCard.style.display = 'none';
                 } else if (!showClock && timerMode !== 'none') {
-                    // Cam + Timer
                     prevClockCard.style.display = 'none';
                     prevTimerCard.style.display = 'flex';
                     prevTimerCard.style.top = '35%';
                     prevTimerCard.style.height = '54%';
                 } else {
-                    // Cam + Clock + Timer (Default stack)
                     prevClockCard.style.display = 'flex';
                     prevClockCard.style.top = '35%';
                     prevClockCard.style.height = '26%';
@@ -541,7 +533,7 @@
         function resetTimers() {
             localStorage.removeItem('streamStart');
             localStorage.removeItem('cdStart');
-            alert("Timer storage reset successfully!");
+            showNotification("Timer storage reset successfully!");
             updateLayout();
         }
 
@@ -549,7 +541,15 @@
             const outputUrl = document.getElementById('outputUrl');
             outputUrl.select();
             document.execCommand('copy');
-            alert("Overlay URL copied to clipboard!");
+            showNotification("Overlay URL copied to clipboard!");
+        }
+
+        function showNotification(msg) {
+            const div = document.createElement('div');
+            div.className = 'fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl bg-cf-panel border border-cf-orange text-white text-xs font-bold shadow-2xl animate-bounce';
+            div.innerHTML = `<i class="fa-solid fa-check-circle text-cf-orange mr-2"></i> ${msg}`;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
         }
 
         // --- Viewer Layout & Execution Logic ---
@@ -575,12 +575,11 @@
             const timerCardEl = document.getElementById('timerCard');
             const bgPath = document.getElementById('bg-path');
 
-            // Handle Webcam visibility & Game window expansion
+            // Handle Webcam visibility & Game window expansion with exact coordinates
             let svgPathD = "";
             if (!showCam) {
                 camEl.style.display = 'none';
                 gameEl.style.width = '1872px';
-                // Expand game cutout across right column
                 svgPathD = `
                   M0 0 H1920 V1080 H0 Z
                   M46 24 H1874 A22 30 0 0 1 1896 46 V866 A22 22 0 0 1 1874 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
@@ -596,9 +595,8 @@
             }
             bgPath.setAttribute('d', svgPathD);
 
-            // Handle Clock & Timer card positions and heights
+            // Handle Clock & Timer card vertical stacking and height calculation
             if (!showCam) {
-                // Right section top starts at Y: 30, total available height: 858px
                 if (!showClock && timerMode === 'none') {
                     clockEl.style.display = 'none';
                     timerCardEl.style.display = 'none';
@@ -613,7 +611,6 @@
                     timerCardEl.style.top = '30px';
                     timerCardEl.style.height = '858px';
                 } else {
-                    // Both clock and timer
                     clockEl.style.display = 'flex';
                     clockEl.style.top = '30px';
                     clockEl.style.height = '420px';
@@ -622,7 +619,6 @@
                     timerCardEl.style.height = '420px';
                 }
             } else {
-                // With Cam: Cam occupies top (30 to 342)
                 if (!showClock && timerMode === 'none') {
                     clockEl.style.display = 'none';
                     timerCardEl.style.display = 'none';
@@ -637,7 +633,6 @@
                     timerCardEl.style.top = '360px';
                     timerCardEl.style.height = '528px';
                 } else {
-                    // Both clock and timer
                     clockEl.style.display = 'flex';
                     clockEl.style.top = '360px';
                     clockEl.style.height = '252px';
@@ -647,7 +642,7 @@
                 }
             }
 
-            // Set up timer card inner HTML structure based on mode
+            // Setup timer card inner structure
             const timerLabel = document.getElementById('timerCardLabel');
             const timerContent = document.getElementById('timerCardContent');
 
@@ -675,7 +670,7 @@
                 `;
             }
 
-            // Equalizer bars
+            // Equalizer bars generator
             var eq = document.getElementById('eq');
             for (var i = 0; i < 22; i++) {
                 var b = document.createElement('b');
@@ -684,7 +679,7 @@
                 eq.appendChild(b);
             }
 
-            // Timers initialization
+            // Persistent timers setup
             var startUptime;
             try {
                 if (!localStorage.getItem('streamStart')) localStorage.setItem('streamStart', Date.now());
@@ -703,6 +698,7 @@
             var pad = function (n) { return String(n).padStart(2, '0'); };
             var C = 2 * Math.PI * 78;
 
+            // Real-time animation loop
             function viewerFrame() {
                 var d = new Date();
                 document.getElementById('day').textContent = DAYS[d.getDay()];
