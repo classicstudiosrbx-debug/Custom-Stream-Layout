@@ -159,10 +159,8 @@
         let tickerInterval = null;
 
         function getObsUrl() {
-            const url = new URL(window.location.href);
-            url.pathname = '/view';
-            url.search = '';
-            url.hash = '';
+            // The viewer is a real /view route. Keep its settings in the query string.
+            const url = new URL('/view', window.location.origin);
             const params = url.searchParams;
             params.set('hue', state.hue);
             params.set('title', state.gameTitle);
