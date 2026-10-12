@@ -34,7 +34,6 @@
 
         body { font-family: 'Outfit', sans-serif; }
 
-        /* ---------- rotating gradient frames ---------- */
         .frame {
             position: absolute; border-radius: 20px; overflow: hidden; z-index: 1;
             box-shadow: 0 0 30px color-mix(in srgb, var(--c1) 50%, transparent),
@@ -51,7 +50,6 @@
         }
         @keyframes spin { to { --a: 360deg; } }
 
-        /* ---------- cards ---------- */
         .card-custom {
             position: absolute; border-radius: 22px; overflow: hidden;
             background:
@@ -83,7 +81,6 @@
     <div id="app" class="min-h-screen flex flex-col"></div>
 
     <script>
-        // State Management & URL Parameters
         const urlParams = new URLSearchParams(window.location.search);
         
         let state = {
@@ -93,12 +90,11 @@
             statusText: urlParams.get('status') || "",
             showFacecam: urlParams.get('cam') !== '0' && urlParams.get('cam') !== 'off',
             showClock: urlParams.get('clock') !== '0' && urlParams.get('clock') !== 'off',
-            timerMode: urlParams.get('timer') || 'uptime', // 'uptime', 'countdown', 'none'
+            timerMode: urlParams.get('timer') || 'uptime',
             cdMins: parseInt(urlParams.get('cdmins')) || 15,
             isViewMode: urlParams.get('view') === '1' || urlParams.get('obs') === '1'
         };
 
-        // Load saved settings if not in view mode
         if (!state.isViewMode) {
             try {
                 const saved = localStorage.getItem('stream_layout_state_v3');
@@ -125,6 +121,8 @@
             cdStart = +localStorage.getItem('cdStart');
         } catch(e) {}
 
+        let tickerInterval = null;
+
         function render() {
             const app = document.getElementById('app');
             
@@ -144,7 +142,7 @@
                             </div>
                         </div>
                         <div class="flex items-center space-x-3">
-                            <button onclick="openOBSView()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-purple-600/20 transition-all flex items-center space-x-2">
+                            <button onclick="openOBSView()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-purple-600/25 transition-all flex items-center space-x-2">
                                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                 <span>Open OBS Browser Source URL</span>
                             </button>
@@ -162,15 +160,15 @@
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-xs font-medium text-slate-300 mb-1">Game Title / Header</label>
-                                        <input type="text" value="${escapeHtml(state.gameTitle)}" oninput="updateState('gameTitle', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                                        <input type="text" value="${escapeHtml(state.gameTitle)}" onchange="updateState('gameTitle', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-slate-300 mb-1">Game Name / Subtitle</label>
-                                        <input type="text" value="${escapeHtml(state.gameSubtitle)}" oninput="updateState('gameSubtitle', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                                        <input type="text" value="${escapeHtml(state.gameSubtitle)}" onchange="updateState('gameSubtitle', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-slate-300 mb-1">Status Banner Text (leave empty to hide)</label>
-                                        <input type="text" value="${escapeHtml(state.statusText)}" oninput="updateState('statusText', this.value)" placeholder="e.g. BRB / STARTING SOON" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                                        <input type="text" value="${escapeHtml(state.statusText)}" onchange="updateState('statusText', this.value)" placeholder="e.g. BRB / STARTING SOON" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
                                     </div>
                                 </div>
                             </div>
@@ -264,7 +262,6 @@
                     </main>
                 `;
                 
-                // Scale preview wrapper to fit container dynamically
                 updatePreviewScale();
                 window.onresize = updatePreviewScale;
                 initLiveTickers();
@@ -286,7 +283,6 @@
             const clockDisabled = !state.showClock;
             const timerMode = state.timerMode;
             
-            // SVG Path calculation depending on cam status
             let svgPathD = `
                 M0 0 H1920 V1080 H0 Z
                 M46 24 H1538 A22 30 0 0 1 1560 46 V866 A22 22 0 0 1 1538 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
@@ -300,7 +296,6 @@
                 `;
             }
 
-            // Right column card positions based on active modules
             let clockTop = 360, clockHeight = 252;
             let timerTop = 636, timerHeight = 252;
 
@@ -324,12 +319,10 @@
             const gameWidth = camDisabled ? '1872px' : '1536px';
 
             return `
-                <!-- Solid black backdrop with see-through holes -->
                 <svg id="bg" width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;left:0;top:0;z-index:0;pointer-events:none;">
                     <path id="bg-path" fill="#000" fill-rule="evenodd" d="${svgPathD}"/>
                 </svg>
 
-                <!-- Game Frame -->
                 <div class="frame" id="game" style="left: 22px; top: 22px; width: ${gameWidth}; height: 864px; transition: width 0.3s ease;">
                     <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] left-[14px] border-r-0 border-bottom-0 rounded-tl-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
                     <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] right-[14px] border-l-0 border-bottom-0 rounded-tr-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
@@ -337,15 +330,12 @@
                     <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 bottom-[14px] right-[14px] border-l-0 border-top-0 rounded-br-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
                 </div>
 
-                <!-- Cam Frame -->
                 <div class="frame" id="cam" style="left: 1584px; top: 30px; width: 312px; height: 312px; display: ${camDisabled ? 'none' : 'block'};"></div>
 
-                <!-- Status Tab -->
                 <div id="status" style="display: ${state.statusText ? 'flex' : 'none'}; position: absolute; left: 792px; top: 2px; transform: translateX(-50%); z-index: 10; align-items: center; gap: 14px; padding: 12px 34px; border-radius: 40px; background: linear-gradient(135deg, color-mix(in srgb, var(--c1) 30%, transparent), color-mix(in srgb, var(--c3) 25%, transparent)), var(--card); box-shadow: 0 0 0 2px var(--c2), 0 0 26px color-mix(in srgb, var(--c1) 60%, transparent); font: 700 28px/1 'Orbitron', monospace; letter-spacing: .22em; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px var(--c1), 0 0 24px var(--c2); white-space: nowrap; padding-left: calc(34px + .22em);">
                     ${escapeHtml(state.statusText)}
                 </div>
 
-                <!-- Clock Card -->
                 <div class="card-custom" id="clock" style="left: 1584px; top: ${clockTop}px; width: 312px; height: ${clockHeight}px; display: ${clockDisabled ? 'none' : 'flex'}; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
                     <div class="label-custom" id="day">MONDAY</div>
                     <div class="glow-custom" id="time" style="font-size: 56px; line-height: 1;">00<span class="colon" style="color: var(--c2);">:</span>00</div>
@@ -355,7 +345,6 @@
                     </div>
                 </div>
 
-                <!-- Timer Card -->
                 <div class="card-custom" id="timerCard" style="left: 1584px; top: ${timerTop}px; width: 312px; height: ${timerHeight}px; display: ${timerMode === 'none' ? 'none' : 'flex'}; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
                     <div class="label-custom" id="timerLabel">${timerMode === 'countdown' ? 'Countdown' : 'Time Live'}</div>
                     <div style="position: relative; width: 176px; height: 176px;">
@@ -370,7 +359,6 @@
                     </div>
                 </div>
 
-                <!-- Bottom Title Strip -->
                 <div class="card-custom" id="strip" style="left: 30px; top: 912px; width: 1872px; height: 144px; display: flex; align-items: center; padding: 0 40px; gap: 32px;">
                     <div style="display: flex; align-items: center; gap: 12px; padding: 12px 22px; border-radius: 40px; background: color-mix(in srgb, var(--c1) 22%, transparent); border: 2px solid var(--c1); font: 700 22px/1 'Rajdhani', sans-serif; letter-spacing: .3em; color: #fff;">
                         <i style="width: 14px; height: 14px; border-radius: 50%; background: #ff3b5c; box-shadow: 0 0 14px #ff3b5c; animation: pulse 1.4s ease-in-out infinite; display: inline-block;"></i>LIVE
@@ -386,7 +374,6 @@
             `;
         }
 
-        // State update methods
         function updateState(key, val) {
             state[key] = val;
             saveState();
@@ -441,17 +428,17 @@
             return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
-        // Efficient ticker updates without re-rendering form elements
         const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
         const pad = (n) => String(n).padStart(2, '0');
         const C = 2 * Math.PI * 78;
 
         function initLiveTickers() {
-            setInterval(() => {
+            if (tickerInterval) clearInterval(tickerInterval); // Fix: Clear previous interval to prevent stacking leaks
+
+            tickerInterval = setInterval(() => {
                 const d = new Date();
                 
-                // Clock updates
                 const dayEl = document.getElementById('day');
                 if (dayEl) dayEl.textContent = DAYS[d.getDay()];
                 
@@ -467,7 +454,6 @@
                     fillEl.style.width = (secs / 60 * 100) + '%';
                 }
 
-                // Timer updates
                 const timerTxt = document.getElementById('timerTxt');
                 const ringEl = document.getElementById('ring');
                 if (timerTxt && ringEl) {
@@ -489,7 +475,6 @@
             }, 250);
         }
 
-        // Initial render
         render();
     </script>
 </body>
