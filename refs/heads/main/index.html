@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Layout Generator & Viewer</title>
+    <title>Stream Layout Studio & Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -14,46 +14,68 @@
                 extend: {
                     fontFamily: {
                         sans: ['Outfit', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
+                        orbitron: ['Orbitron', 'monospace'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
                     },
                 }
             }
         }
     </script>
     <style>
-        body {
-            font-family: 'Outfit', sans-serif;
+        @property --a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+
+        :root {
+            --h: 280;
+            --c1: hsl(var(--h) 100% 62%);
+            --c2: hsl(calc(var(--h) + 70) 100% 60%);
+            --c3: hsl(calc(var(--h) + 140) 100% 62%);
+            --card: rgba(10, 8, 22, .86);
         }
-        .glow-border {
-            position: relative;
+
+        body { font-family: 'Outfit', sans-serif; }
+
+        /* ---------- rotating gradient frames ---------- */
+        .frame {
+            position: absolute; border-radius: 20px; overflow: hidden; z-index: 1;
+            box-shadow: 0 0 30px color-mix(in srgb, var(--c1) 50%, transparent),
+                        0 0 60px color-mix(in srgb, var(--c2) 28%, transparent);
         }
-        .glow-border::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            background: linear-gradient(45deg, #a855f7, #ec4899, #3b82f6, #a855f7);
-            border-radius: inherit;
-            z-index: -1;
-            animation: gradientBorder 6s linear infinite;
-            background-size: 400% 400%;
+        .frame::before {
+            content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 4px;
+            background: conic-gradient(from var(--a), var(--c1), var(--c2), var(--c3), var(--c1));
+            animation: spin 7s linear infinite;
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+                    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+                    mask-composite: exclude;
         }
-        @keyframes gradientBorder {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        @keyframes spin { to { --a: 360deg; } }
+
+        /* ---------- cards ---------- */
+        .card-custom {
+            position: absolute; border-radius: 22px; overflow: hidden;
+            background:
+                radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--c1) 22%, transparent), transparent 55%),
+                radial-gradient(120% 140% at 100% 100%, color-mix(in srgb, var(--c3) 20%, transparent), transparent 55%),
+                var(--card);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--c2) 45%, transparent),
+                        0 0 30px color-mix(in srgb, var(--c1) 30%, transparent);
         }
-        .corner-bracket {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            border-color: #ec4899;
-            z-index: 10;
-            pointer-events: none;
+        .card-custom::after {
+            content: ""; position: absolute; top: 0; bottom: 0; width: 70px; left: -120px;
+            background: linear-gradient(100deg, transparent, rgba(255,255,255,.12), transparent);
+            transform: skewX(-18deg); animation: sweep 6s ease-in-out infinite;
         }
-        .corner-tl { top: -2px; left: -2px; border-top: 2px solid; border-left: 2px solid; }
-        .corner-tr { top: -2px; right: -2px; border-top: 2px solid; border-right: 2px solid; }
-        .corner-bl { bottom: -2px; left: -2px; border-bottom: 2px solid; border-left: 2px solid; }
-        .corner-br { bottom: -2px; right: -2px; border-bottom: 2px solid; border-right: 2px solid; }
+        @keyframes sweep { 0%, 60% { left: -120px; } 100% { left: 115%; } }
+
+        .label-custom {
+            font: 700 16px/1 'Rajdhani', sans-serif; letter-spacing: .45em; text-transform: uppercase;
+            color: var(--c2); text-shadow: 0 0 20px var(--c2); padding-left: .45em;
+        }
+        .glow-custom {
+            font-family: 'Orbitron', monospace; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 6px #fff, 0 0 18px var(--c1), 0 0 38px var(--c1), 0 0 64px var(--c2);
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-purple-500 selection:text-white">
@@ -61,102 +83,55 @@
     <div id="app" class="min-h-screen flex flex-col"></div>
 
     <script>
-        // State Management
+        // State Management & URL Parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
         let state = {
-            gameTitle: "ROBLOX // BUILDING A BOAT",
-            gameSubtitle: "ROBLOX",
-            showFacecam: true,
-            showClock: true,
-            showTimer: true,
-            timerMode: "countdown", // countdown, countup
-            timerMinutes: 15,
-            timerSeconds: 0,
-            timerRunning: true,
-            accentColor: "purple", // purple, blue, emerald, amber, rose
-            isViewMode: false,
-            uptimeSeconds: 0,
-            countdownRemaining: 15 * 60
+            gameTitle: urlParams.get('title') || "ROBLOX // BUILDING A BOAT",
+            gameSubtitle: urlParams.get('game') || "ROBLOX",
+            hue: parseInt(urlParams.get('hue')) || 280,
+            statusText: urlParams.get('status') || "",
+            showFacecam: urlParams.get('cam') !== '0' && urlParams.get('cam') !== 'off',
+            showClock: urlParams.get('clock') !== '0' && urlParams.get('clock') !== 'off',
+            timerMode: urlParams.get('timer') || 'uptime', // 'uptime', 'countdown', 'none'
+            cdMins: parseInt(urlParams.get('cdmins')) || 15,
+            isViewMode: urlParams.get('view') === '1' || urlParams.get('obs') === '1'
         };
 
-        let timerInterval = null;
-        let uptimeInterval = null;
-
-        // Load saved settings if any
-        try {
-            const saved = localStorage.getItem('stream_layout_state_v2');
-            if (saved) {
-                state = { ...state, ...JSON.parse(saved) };
-                state.countdownRemaining = state.timerMinutes * 60 + state.timerSeconds;
-            }
-        } catch (e) {
-            console.error(e);
-        }
-
-        // Check if ?view=1 parameter is present
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('view') === '1' || urlParams.get('obs') === '1') {
-            state.isViewMode = true;
+        // Load saved settings if not in view mode
+        if (!state.isViewMode) {
+            try {
+                const saved = localStorage.getItem('stream_layout_state_v3');
+                if (saved) {
+                    state = { ...state, ...JSON.parse(saved) };
+                }
+            } catch (e) {}
         }
 
         function saveState() {
             try {
-                localStorage.setItem('stream_layout_state_v2', JSON.stringify(state));
+                localStorage.setItem('stream_layout_state_v3', JSON.stringify(state));
             } catch(e) {}
         }
 
-        // Timer intervals
-        function initTimers() {
-            if (timerInterval) clearInterval(timerInterval);
-            if (uptimeInterval) clearInterval(uptimeInterval);
+        document.documentElement.style.setProperty('--h', state.hue);
 
-            timerInterval = setInterval(() => {
-                if (state.timerRunning && state.countdownRemaining > 0) {
-                    state.countdownRemaining--;
-                    render();
-                }
-            }, 1000);
-
-            uptimeInterval = setInterval(() => {
-                state.uptimeSeconds++;
-                render();
-            }, 1000);
-        }
-
-        initTimers();
-
-        // Helper formatting functions
-        function formatClock() {
-            const now = new Date();
-            return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        }
-
-        function formatTimer() {
-            if (state.timerMode === 'countup') {
-                const hrs = Math.floor(state.uptimeSeconds / 3600).toString().padStart(2, '0');
-                const mins = Math.floor((state.uptimeSeconds % 3600) / 60).toString().padStart(2, '0');
-                const secs = (state.uptimeSeconds % 60).toString().padStart(2, '0');
-                return `${hrs}:${mins}:${secs}`;
-            } else {
-                const total = Math.max(0, state.countdownRemaining);
-                const hrs = Math.floor(total / 3600).toString().padStart(2, '0');
-                const mins = Math.floor((total % 3600) / 60).toString().padStart(2, '0');
-                const secs = (total % 60).toString().padStart(2, '0');
-                return `${hrs}:${mins}:${secs}`;
-            }
-        }
+        let streamStart = Date.now();
+        let cdStart = Date.now();
+        try {
+            if (!localStorage.getItem('streamStart')) localStorage.setItem('streamStart', Date.now());
+            streamStart = +localStorage.getItem('streamStart');
+            if (!localStorage.getItem('cdStart')) localStorage.setItem('cdStart', Date.now());
+            cdStart = +localStorage.getItem('cdStart');
+        } catch(e) {}
 
         function render() {
             const app = document.getElementById('app');
             
             if (state.isViewMode) {
-                // Pure transparent OBS view
-                app.innerHTML = `
-                    <div class="w-screen h-screen overflow-hidden bg-transparent p-6 flex flex-col justify-between">
-                        ${renderLayoutContent()}
-                    </div>
-                `;
+                app.innerHTML = renderLayoutHTML(true);
+                initLiveTickers();
             } else {
-                // Generator Studio View
                 app.innerHTML = `
                     <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
                         <div class="flex items-center space-x-3">
@@ -187,12 +162,32 @@
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-xs font-medium text-slate-300 mb-1">Game Title / Header</label>
-                                        <input type="text" id="inputGameTitle" value="${escapeHtml(state.gameTitle)}" oninput="updateState('gameTitle', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors">
+                                        <input type="text" value="${escapeHtml(state.gameTitle)}" oninput="updateState('gameTitle', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-medium text-slate-300 mb-1">Category / Subtitle</label>
-                                        <input type="text" id="inputGameSub" value="${escapeHtml(state.gameSubtitle)}" oninput="updateState('gameSubtitle', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors">
+                                        <label class="block text-xs font-medium text-slate-300 mb-1">Game Name / Subtitle</label>
+                                        <input type="text" value="${escapeHtml(state.gameSubtitle)}" oninput="updateState('gameSubtitle', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
                                     </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-300 mb-1">Status Banner Text (leave empty to hide)</label>
+                                        <input type="text" value="${escapeHtml(state.statusText)}" oninput="updateState('statusText', this.value)" placeholder="e.g. BRB / STARTING SOON" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="border-slate-800">
+
+                            <div>
+                                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
+                                    <i class="fa-solid fa-palette text-purple-400"></i>
+                                    <span>Theme & Color Hue</span>
+                                </h2>
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                        <span>Hue Angle</span>
+                                        <span class="font-mono text-white">${state.hue}°</span>
+                                    </div>
+                                    <input type="range" min="0" max="360" value="${state.hue}" oninput="updateHue(this.value)" class="w-full accent-purple-500 bg-slate-950 cursor-pointer">
                                 </div>
                             </div>
 
@@ -219,14 +214,6 @@
                                         </span>
                                         <input type="checkbox" ${state.showClock ? 'checked' : ''} onchange="toggleModule('showClock', this.checked)" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-900 border-slate-700">
                                     </label>
-
-                                    <label class="flex items-center justify-between p-3 bg-slate-950 border border-slate-800/80 rounded-xl cursor-pointer hover:border-slate-700 transition-all">
-                                        <span class="text-sm font-medium text-slate-200 flex items-center space-x-2">
-                                            <i class="fa-solid fa-stopwatch text-emerald-400 w-5"></i>
-                                            <span>Timer / Uptime Card</span>
-                                        </span>
-                                        <input type="checkbox" ${state.showTimer ? 'checked' : ''} onchange="toggleModule('showTimer', this.checked)" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-900 border-slate-700">
-                                    </label>
                                 </div>
                             </div>
 
@@ -235,22 +222,23 @@
                             <div>
                                 <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
                                     <i class="fa-solid fa-stopwatch text-purple-400"></i>
-                                    <span>Timer Settings</span>
+                                    <span>Timer / Uptime Settings</span>
                                 </h2>
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-xs font-medium text-slate-300 mb-1">Timer Mode</label>
-                                        <select onchange="updateState('timerMode', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors">
+                                        <select onchange="updateState('timerMode', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                                            <option value="uptime" ${state.timerMode === 'uptime' ? 'selected' : ''}>Uptime (Count Up)</option>
                                             <option value="countdown" ${state.timerMode === 'countdown' ? 'selected' : ''}>Countdown Timer</option>
-                                            <option value="countup" ${state.timerMode === 'countup' ? 'selected' : ''}>Countup Uptime</option>
+                                            <option value="none" ${state.timerMode === 'none' ? 'selected' : ''}>Disabled / None</option>
                                         </select>
                                     </div>
                                     ${state.timerMode === 'countdown' ? `
                                     <div>
-                                        <label class="block text-xs font-medium text-slate-300 mb-1">Duration (Minutes)</label>
+                                        <label class="block text-xs font-medium text-slate-300 mb-1">Countdown Duration (Minutes)</label>
                                         <div class="flex items-center space-x-2">
-                                            <input type="number" min="1" max="180" value="${Math.floor(state.countdownRemaining / 60)}" onchange="updateTimerMinutes(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors">
-                                            <button onclick="resetTimer()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl font-medium transition-colors">Reset</button>
+                                            <input type="number" min="1" max="180" value="${state.cdMins}" onchange="updateCdMins(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none">
+                                            <button onclick="resetTimers()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl font-medium">Reset</button>
                                         </div>
                                     </div>
                                     ` : ''}
@@ -262,132 +250,152 @@
                         <div class="flex-1 bg-slate-900 p-6 flex flex-col items-center justify-center overflow-auto relative">
                             <div class="absolute top-4 left-6 text-xs text-slate-400 flex items-center space-x-2">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <span>Live Preview (16:9 Aspect ratio container)</span>
+                                <span>Live Overlay Preview (Scaled 1920x1080)</span>
                             </div>
 
-                            <div class="w-full max-w-5xl aspect-video bg-slate-950 border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl relative flex flex-col justify-between p-6">
-                                ${renderLayoutContent()}
+                            <div class="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-slate-800">
+                                <div class="absolute inset-0 origin-top-left transform" id="preview-scale-container">
+                                    <div style="width: 1920px; height: 1080px; position: relative; transform-origin: top left;" id="preview-inner">
+                                        ${renderLayoutHTML(false)}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </main>
                 `;
+                
+                // Scale preview wrapper to fit container dynamically
+                updatePreviewScale();
+                window.onresize = updatePreviewScale;
+                initLiveTickers();
             }
         }
 
-        function renderLayoutContent() {
-            // Determine right column arrangement based on rules:
-            // 1. Facecam is ALWAYS at top-right with its own see-through frame & corner. Gameplay cannot overlap it.
-            // 2. If facecam is disabled AND one of the sidebar widgets (Clock or Timer) is left alone/active,
-            //    that remaining widget must move down to the bottom part of the right column, and gameplay becomes wider.
-            // 3. If BOTH clock and timer are enabled alongside facecam disabled, they split the right column vertically.
-            // 4. If everything in the right column except facecam is disabled, right column is empty or hidden, gameplay fills width.
-
-            const hasFacecam = state.showFacecam;
-            const hasClock = state.showClock;
-            const hasTimer = state.showTimer;
-
-            let rightColContent = '';
-            let rightColClass = "w-72 flex flex-col space-y-4 shrink-0 transition-all duration-300";
-            let gameColClass = "flex-1 mr-4 transition-all duration-300";
-
-            if (!hasFacecam && !hasClock && !hasTimer) {
-                // Nothing in right col
-                rightColClass = "hidden";
-                gameColClass = "w-full";
-            } else if (!hasFacecam && (hasClock !== hasTimer)) {
-                // Exactly ONE sidebar widget active while facecam is disabled -> Move to bottom of right column!
-                rightColClass = "w-72 flex flex-col justify-end shrink-0 transition-all duration-300";
+        function updatePreviewScale() {
+            const container = document.querySelector('.max-w-5xl');
+            const inner = document.getElementById('preview-inner');
+            if (container && inner) {
+                const scale = container.clientWidth / 1920;
+                inner.style.transform = `scale(${scale})`;
+                container.style.height = `${1080 * scale}px`;
             }
+        }
 
-            // Build right column inner HTML
-            let innerRightHtml = '';
+        function renderLayoutHTML(isPureOverlay) {
+            const camDisabled = !state.showFacecam;
+            const clockDisabled = !state.showClock;
+            const timerMode = state.timerMode;
+            
+            // SVG Path calculation depending on cam status
+            let svgPathD = `
+                M0 0 H1920 V1080 H0 Z
+                M46 24 H1538 A22 30 0 0 1 1560 46 V866 A22 22 0 0 1 1538 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
+                M1606 24 H1874 A22 30 0 0 1 1896 46 V314 A22 22 0 0 1 1874 336 H1606 A22 30 0 0 1 1584 314 V46 A22 30 0 0 1 1606 24 Z
+            `;
 
-            if (hasFacecam) {
-                innerRightHtml += `
-                    <div class="w-full aspect-[4/3] bg-slate-900/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl relative flex items-center justify-center glow-border shadow-lg">
-                        <div class="corner-bracket corner-tl"></div>
-                        <div class="corner-bracket corner-tr"></div>
-                        <div class="corner-bracket corner-bl"></div>
-                        <div class="corner-bracket corner-br"></div>
-                        <div class="text-slate-500 font-mono text-xs tracking-wider flex flex-col items-center space-y-1">
-                            <i class="fa-solid fa-video text-slate-600 text-lg"></i>
-                            <span>FACECAM</span>
-                        </div>
-                    </div>
+            if (camDisabled) {
+                svgPathD = `
+                    M0 0 H1920 V1080 H0 Z
+                    M46 24 H1874 A22 30 0 0 1 1896 46 V866 A22 22 0 0 1 1874 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
                 `;
             }
 
-            let widgetsHtml = '';
-            if (hasClock) {
-                widgetsHtml += `
-                    <div class="w-full bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-md">
-                        <div class="flex items-center space-x-2 text-xs font-semibold text-slate-400 tracking-wider">
-                            <i class="fa-solid fa-clock text-blue-400"></i>
-                            <span>LOCAL TIME</span>
-                        </div>
-                        <div class="font-mono text-sm font-bold text-white tracking-widest">${formatClock()}</div>
-                    </div>
-                `;
+            // Right column card positions based on active modules
+            let clockTop = 360, clockHeight = 252;
+            let timerTop = 636, timerHeight = 252;
+
+            if (camDisabled) {
+                if (!clockDisabled && timerMode !== 'none') {
+                    clockTop = 30; clockHeight = 420;
+                    timerTop = 468; timerHeight = 420;
+                } else if (!clockDisabled && timerMode === 'none') {
+                    clockTop = 30; clockHeight = 858;
+                } else if (clockDisabled && timerMode !== 'none') {
+                    timerTop = 636; timerHeight = 252;
+                }
+            } else {
+                if (!clockDisabled && timerMode === 'none') {
+                    clockTop = 360; clockHeight = 528;
+                } else if (clockDisabled && timerMode !== 'none') {
+                    timerTop = 360; timerHeight = 528;
+                }
             }
 
-            if (hasTimer) {
-                widgetsHtml += `
-                    <div class="w-full bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-md">
-                        <div class="flex items-center space-x-2 text-xs font-semibold text-slate-400 tracking-wider">
-                            <i class="fa-solid fa-${state.timerMode === 'countdown' ? 'hourglass-half' : 'stopwatch'} text-emerald-400"></i>
-                            <span>${state.timerMode === 'countdown' ? 'COUNTDOWN' : 'UPTIME'}</span>
-                        </div>
-                        <div class="font-mono text-sm font-bold text-white tracking-widest">${formatTimer()}</div>
-                    </div>
-                `;
-            }
-
-            innerRightHtml += widgetsHtml;
+            const gameWidth = camDisabled ? '1872px' : '1536px';
 
             return `
-                <!-- Main Top Section (Game & Right Sidebar) -->
-                <div class="flex-1 flex overflow-hidden mb-4">
-                    <!-- Game Window -->
-                    <div class="${gameColClass} bg-slate-900/40 backdrop-blur-sm border border-slate-800/80 rounded-2xl relative flex items-center justify-center shadow-2xl overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 pointer-events-none"></div>
-                        <div class="text-slate-600 font-mono text-sm tracking-widest uppercase flex flex-col items-center space-y-2">
-                            <i class="fa-solid fa-gamepad text-2xl text-slate-700"></i>
-                            <span>Game Frame</span>
-                        </div>
-                    </div>
+                <!-- Solid black backdrop with see-through holes -->
+                <svg id="bg" width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;left:0;top:0;z-index:0;pointer-events:none;">
+                    <path id="bg-path" fill="#000" fill-rule="evenodd" d="${svgPathD}"/>
+                </svg>
 
-                    <!-- Right Column (Facecam & Widgets) -->
-                    ${(hasFacecam || hasClock || hasTimer) ? `
-                    <div class="${rightColClass}">
-                        ${innerRightHtml}
+                <!-- Game Frame -->
+                <div class="frame" id="game" style="left: 22px; top: 22px; width: ${gameWidth}; height: 864px; transition: width 0.3s ease;">
+                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] left-[14px] border-r-0 border-bottom-0 rounded-tl-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
+                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] right-[14px] border-l-0 border-bottom-0 rounded-tr-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
+                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 bottom-[14px] left-[14px] border-r-0 border-top-0 rounded-bl-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
+                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 bottom-[14px] right-[14px] border-l-0 border-top-0 rounded-br-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
+                </div>
+
+                <!-- Cam Frame -->
+                <div class="frame" id="cam" style="left: 1584px; top: 30px; width: 312px; height: 312px; display: ${camDisabled ? 'none' : 'block'};"></div>
+
+                <!-- Status Tab -->
+                <div id="status" style="display: ${state.statusText ? 'flex' : 'none'}; position: absolute; left: 792px; top: 2px; transform: translateX(-50%); z-index: 10; align-items: center; gap: 14px; padding: 12px 34px; border-radius: 40px; background: linear-gradient(135deg, color-mix(in srgb, var(--c1) 30%, transparent), color-mix(in srgb, var(--c3) 25%, transparent)), var(--card); box-shadow: 0 0 0 2px var(--c2), 0 0 26px color-mix(in srgb, var(--c1) 60%, transparent); font: 700 28px/1 'Orbitron', monospace; letter-spacing: .22em; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px var(--c1), 0 0 24px var(--c2); white-space: nowrap; padding-left: calc(34px + .22em);">
+                    ${escapeHtml(state.statusText)}
+                </div>
+
+                <!-- Clock Card -->
+                <div class="card-custom" id="clock" style="left: 1584px; top: ${clockTop}px; width: 312px; height: ${clockHeight}px; display: ${clockDisabled ? 'none' : 'flex'}; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+                    <div class="label-custom" id="day">MONDAY</div>
+                    <div class="glow-custom" id="time" style="font-size: 56px; line-height: 1;">00<span class="colon" style="color: var(--c2);">:</span>00</div>
+                    <div id="date" style="font: 600 20px/1 'Rajdhani', sans-serif; letter-spacing: .26em; color: rgba(255,255,255,.8); padding-left: .26em;">01 JAN 2026</div>
+                    <div id="bar" style="width: 240px; height: 6px; border-radius: 6px; background: rgba(255,255,255,.1); overflow: hidden; margin-top: 4px;">
+                        <div id="fill" style="height: 100%; width: 0%; border-radius: 6px; background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3)); box-shadow: 0 0 12px var(--c2);"></div>
                     </div>
-                    ` : ''}
+                </div>
+
+                <!-- Timer Card -->
+                <div class="card-custom" id="timerCard" style="left: 1584px; top: ${timerTop}px; width: 312px; height: ${timerHeight}px; display: ${timerMode === 'none' ? 'none' : 'flex'}; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+                    <div class="label-custom" id="timerLabel">${timerMode === 'countdown' ? 'Countdown' : 'Time Live'}</div>
+                    <div style="position: relative; width: 176px; height: 176px;">
+                        <svg width="176" height="176" viewBox="0 0 176 176" style="position: absolute; inset: 0; transform: rotate(-90deg);">
+                            <circle cx="88" cy="88" r="78" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/>
+                            <circle id="ring" cx="88" cy="88" r="78" fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-dasharray="490.1" stroke-dashoffset="490.1" style="filter: drop-shadow(0 0 6px var(--c2));"/>
+                            <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0" stop-color="hsl(var(--h) 100% 62%)"/><stop offset="1" stop-color="hsl(calc(var(--h) + 140) 100% 62%)"/>
+                            </linearGradient></defs>
+                        </svg>
+                        <div class="glow-custom" id="timerTxt" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 25px;">00:00:00</div>
+                    </div>
                 </div>
 
                 <!-- Bottom Title Strip -->
-                <div class="w-full bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl">
-                    <div class="flex items-center space-x-4">
-                        <div class="px-3 py-1 bg-red-600/20 border border-red-500/30 rounded-full flex items-center space-x-2">
-                            <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                            <span class="text-xs font-bold text-red-400 tracking-wider">LIVE</span>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-sm tracking-wide text-white">${escapeHtml(state.gameTitle)}</h3>
-                            <p class="text-xs text-purple-400 font-medium">${escapeHtml(state.gameSubtitle)}</p>
-                        </div>
+                <div class="card-custom" id="strip" style="left: 30px; top: 912px; width: 1872px; height: 144px; display: flex; align-items: center; padding: 0 40px; gap: 32px;">
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 22px; border-radius: 40px; background: color-mix(in srgb, var(--c1) 22%, transparent); border: 2px solid var(--c1); font: 700 22px/1 'Rajdhani', sans-serif; letter-spacing: .3em; color: #fff;">
+                        <i style="width: 14px; height: 14px; border-radius: 50%; background: #ff3b5c; box-shadow: 0 0 14px #ff3b5c; animation: pulse 1.4s ease-in-out infinite; display: inline-block;"></i>LIVE
                     </div>
-                    <div class="flex items-center space-x-3 text-slate-400 text-xs font-mono">
-                        <span>1080p60</span>
-                        <span>•</span>
-                        <span>OBS Studio</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <div id="title" style="font: 900 52px/1.1 'Orbitron', monospace; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 12px var(--c1), 0 0 34px var(--c1);">${escapeHtml(state.gameTitle)}</div>
+                        <div id="game-name" style="margin-top: 10px; font: 700 26px/1 'Rajdhani', sans-serif; letter-spacing: .4em; text-transform: uppercase; color: var(--c3); text-shadow: 0 0 10px var(--c3);">${escapeHtml(state.gameSubtitle)}</div>
+                    </div>
+                    <div id="eq" style="display: flex; align-items: flex-end; gap: 6px; height: 80px;">
+                        ${Array.from({length: 22}).map(() => `<b style="width: 10px; border-radius: 5px; background: linear-gradient(to top, var(--c1), var(--c2), var(--c3)); box-shadow: 0 0 10px color-mix(in srgb, var(--c2) 70%, transparent); height: 20%; animation: eq 1s ease-in-out infinite alternate; animation-duration: ${(0.5 + Math.random() * 0.9).toFixed(2)}s; animation-delay:${(-Math.random()).toFixed(2)}s;"></b>`).join('')}
                     </div>
                 </div>
             `;
         }
 
-        // State update handlers
+        // State update methods
         function updateState(key, val) {
             state[key] = val;
+            saveState();
+            render();
+        }
+
+        function updateHue(val) {
+            state.hue = parseInt(val);
+            document.documentElement.style.setProperty('--h', state.hue);
             saveState();
             render();
         }
@@ -398,37 +406,91 @@
             render();
         }
 
-        function updateTimerMinutes(mins) {
-            const m = parseInt(mins) || 15;
-            state.timerMinutes = m;
-            state.countdownRemaining = m * 60;
+        function updateCdMins(mins) {
+            state.cdMins = parseInt(mins) || 15;
             saveState();
             render();
         }
 
-        function resetTimer() {
-            state.countdownRemaining = state.timerMinutes * 60;
-            state.uptimeSeconds = 0;
-            render();
+        function resetTimers() {
+            try {
+                localStorage.setItem('streamStart', Date.now());
+                localStorage.setItem('cdStart', Date.now());
+                streamStart = Date.now();
+                cdStart = Date.now();
+            } catch(e) {}
         }
 
         function openOBSView() {
             const currentUrl = window.location.href.split('?')[0];
-            const viewUrl = currentUrl + '?view=1';
-            window.open(viewUrl, '_blank', 'width=1280,height=720');
+            const params = new URLSearchParams({
+                view: '1',
+                hue: state.hue,
+                title: state.gameTitle,
+                game: state.gameSubtitle,
+                status: state.statusText,
+                cam: state.showFacecam ? '1' : '0',
+                clock: state.showClock ? '1' : '0',
+                timer: state.timerMode,
+                cdmins: state.cdMins
+            });
+            window.open(currentUrl + '?' + params.toString(), '_blank', 'width=1280,height=720');
         }
 
         function escapeHtml(str) {
-            return (str || '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;');
+            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Efficient ticker updates without re-rendering form elements
+        const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+        const pad = (n) => String(n).padStart(2, '0');
+        const C = 2 * Math.PI * 78;
+
+        function initLiveTickers() {
+            setInterval(() => {
+                const d = new Date();
+                
+                // Clock updates
+                const dayEl = document.getElementById('day');
+                if (dayEl) dayEl.textContent = DAYS[d.getDay()];
+                
+                const timeEl = document.getElementById('time');
+                if (timeEl) timeEl.innerHTML = pad(d.getHours()) + '<span class="colon" style="color: var(--c2);">:</span>' + pad(d.getMinutes());
+                
+                const dateEl = document.getElementById('date');
+                if (dateEl) dateEl.textContent = pad(d.getDate()) + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+                
+                const fillEl = document.getElementById('fill');
+                if (fillEl) {
+                    const secs = d.getSeconds() + d.getMilliseconds() / 1000;
+                    fillEl.style.width = (secs / 60 * 100) + '%';
+                }
+
+                // Timer updates
+                const timerTxt = document.getElementById('timerTxt');
+                const ringEl = document.getElementById('ring');
+                if (timerTxt && ringEl) {
+                    if (state.timerMode === 'uptime') {
+                        const t = Math.max(0, Math.floor((Date.now() - streamStart) / 1000));
+                        timerTxt.textContent = pad(Math.floor(t / 3600)) + ':' + pad(Math.floor(t / 60) % 60) + ':' + pad(t % 60);
+                        ringEl.setAttribute('stroke-dashoffset', C * (1 - (t % 60) / 60));
+                    } else if (state.timerMode === 'countdown') {
+                        const totalSecs = state.cdMins * 60;
+                        const elapsed = Math.floor((Date.now() - cdStart) / 1000);
+                        const remaining = Math.max(0, totalSecs - elapsed);
+                        const hrs = Math.floor(remaining / 3600);
+                        const mins = Math.floor((remaining % 3600) / 60);
+                        const secs = remaining % 60;
+                        timerTxt.textContent = pad(hrs) + ':' + pad(mins) + ':' + pad(secs);
+                        ringEl.setAttribute('stroke-dashoffset', C * (1 - (remaining % 60) / 60));
+                    }
+                }
+            }, 250);
         }
 
         // Initial render
         render();
-
-        // Refresh clock/timers every second in generator/view mode
-        setInterval(() => {
-            render();
-        }, 1000);
     </script>
 </body>
 </html>
