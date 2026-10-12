@@ -105,6 +105,34 @@
             font-family: 'Orbitron', monospace; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums;
             text-shadow: 0 0 6px #fff, 0 0 18px var(--c1), 0 0 38px var(--c1), 0 0 64px var(--c2);
         }
+        .corner-polish {
+            position: absolute; z-index: 2; width: 46px; height: 46px;
+            border: 2px solid rgba(255,255,255,.94);
+            filter: drop-shadow(0 0 6px var(--c2));
+        }
+        .corner-polish::before {
+            content: ""; position: absolute; width: 14px; height: 2px;
+            background: var(--c2); box-shadow: 0 0 8px var(--c2);
+        }
+        .corner-polish::after {
+            content: ""; position: absolute; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--c3); box-shadow: 0 0 9px var(--c3);
+        }
+        .corner-polish.tl { top: 16px; left: 16px; border-right: 0; border-bottom: 0; border-top-left-radius: 12px; }
+        .corner-polish.tl::before { top: -2px; right: 8px; }
+        .corner-polish.tl::after { top: -4px; left: -4px; }
+        .corner-polish.tr { top: 16px; right: 16px; border-left: 0; border-bottom: 0; border-top-right-radius: 12px; }
+        .corner-polish.tr::before { top: -2px; left: 8px; }
+        .corner-polish.tr::after { top: -4px; right: -4px; }
+        .corner-polish.bl { bottom: 16px; left: 16px; border-right: 0; border-top: 0; border-bottom-left-radius: 12px; }
+        .corner-polish.bl::before { bottom: -2px; right: 8px; }
+        .corner-polish.bl::after { bottom: -4px; left: -4px; }
+        .corner-polish.br { bottom: 16px; right: 16px; border-left: 0; border-top: 0; border-bottom-right-radius: 12px; }
+        .corner-polish.br::before { bottom: -2px; left: 8px; }
+        .corner-polish.br::after { bottom: -4px; right: -4px; }
+        body.no-neon .corner-polish { filter: none !important; }
+        body.no-neon .corner-polish::before,
+        body.no-neon .corner-polish::after { box-shadow: none !important; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-purple-500 selection:text-white">
@@ -472,10 +500,10 @@
                 </svg>
 
                 <div class="frame" id="game" style="left: 22px; top: 22px; width: ${gameWidth}; height: 864px; transition: width 0.3s ease;">
-                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] left-[14px] border-r-0 border-b-0 rounded-tl-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
-                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 top-[14px] right-[14px] border-l-0 border-b-0 rounded-tr-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
-                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 bottom-[14px] left-[14px] border-r-0 border-t-0 rounded-bl-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
-                    <div class="absolute w-[34px] h-[34px] border-[3px] border-white z-10 bottom-[14px] right-[14px] border-l-0 border-t-0 rounded-br-[10px]" style="filter: drop-shadow(0 0 6px var(--c2))"></div>
+                    <div class="corner-polish tl"></div>
+                    <div class="corner-polish tr"></div>
+                    <div class="corner-polish bl"></div>
+                    <div class="corner-polish br"></div>
                 </div>
 
                 <div class="frame" id="cam" style="left: 1584px; top: 30px; width: 312px; height: 312px; display: ${camDisabled ? 'none' : 'block'};"></div>
