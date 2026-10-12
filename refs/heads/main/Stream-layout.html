@@ -225,6 +225,9 @@ if (clockDisabled) {
 if (camDisabled) {
   camEl.style.display = 'none';
   
+  // FIX: Expand the game frame to fill the full width (1920px - margins)
+  document.getElementById('game').style.width = '1872px';
+  
   // Game window fills full width above bottom strip
   bgPath.setAttribute('d', `
     M0 0 H1920 V1080 H0 Z
